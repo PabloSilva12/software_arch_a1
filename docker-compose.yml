@@ -1,0 +1,42 @@
+version: '3.8'
+
+networks:
+  app-network:
+    driver: bridge
+
+services:
+  cassandra:
+    image: cassandra:latest
+    ports:
+      - "9042:9042"
+    volumes:
+      - .:/docker-entrypoint-initdb.d  # Mount the whole project directory
+    healthcheck:
+      test: ["CMD", "nodetool", "status"]
+      interval: 10s
+      retries: 10
+      start_period: 180s
+      timeout: 10s
+    environment:
+      - CASSANDRA_CLUSTER_NAME=Test Cluster
+      - CASSANDRA_DC=dc1
+      - CASSANDRA_RACK=rack1
+      - CASSANDRA_ENDPOINT_SNITCH=GossipingPropertyFileSnitch
+    networks:
+      - app-network
+
+  web:
+    build: .
+    command: bundle exec rails s -b '0.0.0.0'
+    volumes:
+      - .:/myapp
+    ports:
+      - "3000:3000"
+    depends_on:
+      cassandra:
+        condition: service_healthy
+
+    environment:
+      - RAILS_ENV=development
+    networks:
+      - app-network
