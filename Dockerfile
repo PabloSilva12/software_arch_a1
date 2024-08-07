@@ -13,6 +13,8 @@ WORKDIR $RAILS_ROOT
 COPY Gemfile Gemfile
 COPY Gemfile.lock Gemfile.lock
 RUN bundle install
+RUN rake cequel:migrate
+RUN rake db:seed
 
 COPY . .
 

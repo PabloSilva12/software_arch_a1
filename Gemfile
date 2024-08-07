@@ -69,3 +69,9 @@ end
 gem 'cassandra-driver'
 
 gem 'sorted_set'
+
+gem 'cequel'
+
+gem 'activemodel-serializers-xml'
+
+gem 'i18n'
