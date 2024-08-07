@@ -1,5 +1,3 @@
-# config/cassandra.rb
-
 require 'cassandra'
 require 'yaml'
 
@@ -10,9 +8,13 @@ CASSANDRA_CONFIG = YAML.load_file(Rails.root.join('config', 'cassandra.yml'))[Ra
 MAX_RETRIES = 5
 # Wait time between retries
 WAIT_TIME = 15 # seconds
+# Initial wait time before first attempt
+INITIAL_WAIT_TIME = 30 # seconds
 
 def connect_to_cassandra
   retries = 0
+
+  sleep INITIAL_WAIT_TIME # Initial wait before first connection attempt
 
   begin
     cluster = Cassandra.cluster(
@@ -32,6 +34,7 @@ def connect_to_cassandra
       retry
     else
       Rails.logger.error "Failed to connect to Cassandra after #{MAX_RETRIES} attempts: #{e.message}"
+      Rails.logger.error e.backtrace.join("\n")
       raise "Failed to connect to Cassandra: #{e.message}"
     end
   end

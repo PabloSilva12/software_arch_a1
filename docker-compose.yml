@@ -6,17 +6,22 @@ networks:
 
 services:
   cassandra:
-    image: cassandra:latest
+    image: cassandra:3.11
     ports:
       - "9042:9042"
-    volumes:
-      - .:/docker-entrypoint-initdb.d  # Mount the whole project directory
     healthcheck:
       test: ["CMD", "nodetool", "status"]
-      interval: 10s
-      retries: 10
-      start_period: 180s
+      interval: 30s
+      retries: 5
       timeout: 10s
+    command: 
+      - /bin/bash
+      - -c
+      - |
+        /docker-entrypoint.sh cassandra -f &
+        sleep 30
+        cqlsh -e "CREATE KEYSPACE IF NOT EXISTS my_keyspace WITH REPLICATION = {'class': 'SimpleStrategy', 'replication_factor': 1};"
+        wait
     environment:
       - CASSANDRA_CLUSTER_NAME=Test Cluster
       - CASSANDRA_DC=dc1

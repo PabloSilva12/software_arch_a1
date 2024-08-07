@@ -1,14 +1,21 @@
-# Dockerfile
+
 FROM ruby:3.2.2
 
-RUN apt-get update -qq && apt-get install -y nodejs postgresql-client
 
-WORKDIR /my_app
-COPY Gemfile /my_app/Gemfile
-COPY Gemfile.lock /my_app/Gemfile.lock
+RUN apt-get update -qq && apt-get install -y build-essential libpq-dev nodejs
 
+ENV RAILS_ROOT /var/www/my_app
+RUN mkdir -p $RAILS_ROOT
+
+WORKDIR $RAILS_ROOT
+
+
+COPY Gemfile Gemfile
+COPY Gemfile.lock Gemfile.lock
 RUN bundle install
 
-COPY . /my_app
+COPY . .
+
+EXPOSE 3000
 
 CMD ["rails", "server", "-b", "0.0.0.0"]
