@@ -1,0 +1,24 @@
+<h1>Edit Author</h1>
+
+<%= form_with url: author_path(@author['id']), method: :patch, local: true do |form| %>
+  <p>
+    <%= form.label :name %><br>
+    <%= form.text_field :name, value: @author['name'] %>
+  </p>
+  
+  <p>
+    <%= form.label :biography %><br>
+    <%= form.text_area :biography, value: @author['biography'] %>
+  </p>
+  
+  <p>
+    <%= form.label :books_count %><br>
+    <%= form.number_field :books_count, value: @author['books_count'] %>
+  </p>
+
+  <p>
+    <%= form.submit 'Update Author' %>
+  </p>
+<% end %>
+
+<%= link_to 'Back to Authors', authors_path %>

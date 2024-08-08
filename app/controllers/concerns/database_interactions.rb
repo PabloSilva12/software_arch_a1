@@ -16,14 +16,14 @@ module DatabaseInteractions
       hosts: CASSANDRA_CONFIG[:hosts],
       port: CASSANDRA_CONFIG[:port]
     )
-    session  = cluster.connect(keyspace)
+    session  = cluster.connect(KEYSPACE)
     base_parameters = COLUMNS_BY_TABLE[table_name]
     string_of_base = ""
     string_of_set = ""
     base_parameters.each_with_index do |column, index|
       string_of_base += column
       string_of_base += ", " unless index == columns.length - 1
-      if index != 0 do
+      if index != 0
         string_of_set += "'#{parameter[column]}'"
         string_of_set += ", " unless index == columns.length - 1
       end
@@ -32,13 +32,17 @@ module DatabaseInteractions
     session.execute(query)
   end
 
-  def run_selecting_query(table_name, filter = 'TRUE')
+  def run_selecting_query(table_name, filter = 'FALSE')
     cluster = Cassandra.cluster(
       hosts: CASSANDRA_CONFIG[:hosts],
       port: CASSANDRA_CONFIG[:port]
     )
-    session  = cluster.connect(keyspace)
-    query = "SELECT * FROM #{KEYSPACE}.#{table_name} WHERE #{filter};"
+    session  = cluster.connect(KEYSPACE)
+    if filter == 'FALSE'
+      query = "SELECT * FROM #{KEYSPACE}.#{table_name};"
+    else
+      query = "SELECT * FROM #{KEYSPACE}.#{table_name} WHERE #{filter};"
+    end
     return session.execute(query)
   end
 
@@ -47,7 +51,7 @@ module DatabaseInteractions
       hosts: CASSANDRA_CONFIG[:hosts],
       port: CASSANDRA_CONFIG[:port]
     )
-    session  = cluster.connect(keyspace)
+    session  = cluster.connect(KEYSPACE)
     query = "DELETE FROM #{KEYSPACE}.#{table_name} WHERE  id = #{id};"
     session.execute(query)
   end
@@ -57,7 +61,7 @@ module DatabaseInteractions
       hosts: CASSANDRA_CONFIG[:hosts],
       port: CASSANDRA_CONFIG[:port]
     )
-    session  = cluster.connect(keyspace)
+    session  = cluster.connect(KEYSPACE)
     query = "UPDATE FROM #{KEYSPACE}.#{table_name} SET #{parameter} = #{value} WHERE  id = #{id};"
     session.execute(query)
   end

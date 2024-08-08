@@ -1,0 +1,10 @@
+<h1>Book Details</h1>
+
+<p><strong>Title:</strong> <%= @book['title'] %></p>
+<p><strong>Author:</strong> <%= @book['author_name'] %></p>
+<p><strong>Average Rating:</strong> <%= @book['average_rating'] %></p>
+<p><strong>Sales Count:</strong> <%= @book['sales_count'] %></p>
+
+<%= link_to 'Edit', edit_book_path(@book['id']) %> |
+<%= link_to 'Delete', book_path(@book['id']), method: :delete, data: { confirm: 'Are you sure?' } %> |
+<%= link_to 'Back to Books', books_path %>

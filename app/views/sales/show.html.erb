@@ -1,0 +1,9 @@
+<h1>Sale Details</h1>
+
+<p><strong>Book Title:</strong> <%= @sale['book_title'] %></p>
+<p><strong>Copies Sold:</strong> <%= @sale['copies_sold'] %></p>
+<p><strong>Date:</strong> <%= @sale['date'] %></p>
+
+<%= link_to 'Edit', edit_sale_path(@sale['id']) %> |
+<%= link_to 'Delete', sale_path(@sale['id']), method: :delete, data: { confirm: 'Are you sure?' } %> |
+<%= link_to 'Back to Sales', sales_path %>
