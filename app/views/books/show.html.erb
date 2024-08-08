@@ -7,5 +7,5 @@
 
 
 <%= link_to 'Edit', edit_book_path(@book['id']) %> |
-<%= link_to 'Delete', book_path(@book['id']), method: :delete, data: { confirm: 'Are you sure?' } %> |
+<%=link_to 'Delete',book_path(@book['id']) , data: { turbo_method: "delete" }%>|
 <%= link_to 'Back to Books', books_path %>

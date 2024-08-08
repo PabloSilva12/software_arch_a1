@@ -6,5 +6,5 @@
 
 
 <%= link_to 'Edit', edit_sale_path(@sale['id']) %> |
-<%= link_to 'Delete', sale_path(@sale['id']), method: :delete, data: { confirm: 'Are you sure?' } %> |
+<%=link_to 'Delete',sale_path(@sale['id']) , data: { turbo_method: "delete" }%>|
 <%= link_to 'Back to Sales', sales_path %>
