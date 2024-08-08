@@ -38,7 +38,7 @@ class AuthorsController < ApplicationController
     end
 
     filled_params.each do |key, value|
-      if key != "id" do
+      if key != "id"
         run_update_query(TABLE_NAME, params[:id], key, value)
       end
     end
