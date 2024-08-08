@@ -65,7 +65,7 @@ group :test do
 
 end
 
-
+gem 'faker'
 gem 'cassandra-driver'
 
 gem 'sorted_set'

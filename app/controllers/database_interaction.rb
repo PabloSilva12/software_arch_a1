@@ -23,8 +23,8 @@ module DatabaseInteractions
     base_parameters.each_with_index do |column, index|
       string_of_base += column
       string_of_base += ", " unless index == columns.length - 1
-      if index != 0 do
-        string_of_set += "'#{parameter[column]}'"
+      if index != 0
+        string_of_set += "'#{parameters[column]}'"
         string_of_set += ", " unless index == columns.length - 1
       end
     end
