@@ -1,24 +1,41 @@
-# README
+# Assignement 1
 
-This README would normally document whatever steps are necessary to get the
-application up and running.
+This is the code for the assignment 1 of the course software architecture. The application is containerized using Docker and Docker Compose.
 
-Things you may want to cover:
+## Prerequisites
 
-* Ruby version
+- Docker
+- Docker Compose
 
-* System dependencies
+## Getting Started
 
-* Configuration
+### Clone the Repository
 
-* Database creation
+First, clone this repository to your local machine
 
-* Database initialization
+### Build and Start the Containers
 
-* How to run the test suite
+To build and start the application and Cassandra containers, run:
 
-* Services (job queues, cache servers, search engines, etc.)
+// docker-compose up --build
 
-* Deployment instructions
+This command will:
 
-* ...
+- Build the Docker image for the Rails app.
+- Start Cassandra and set up the keyspace and tables.
+- Start the Rails application server.
+
+### Accessing the Application
+
+Once the containers are up and running, you can access the Rails application at:
+
+http://localhost:3000
+
+### Seeding the DB
+
+### Stopping the Containers
+
+To stop and remove the containers, use:
+
+// docker-compose down
+This will stop and remove the running containers but will keep your data intact.
