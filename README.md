@@ -38,4 +38,5 @@ http://localhost:3000
 To stop and remove the containers, use:
 
 // docker-compose down
+
 This will stop and remove the running containers but will keep your data intact.
