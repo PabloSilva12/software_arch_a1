@@ -9,7 +9,10 @@ class TablesController < ApplicationController
     keyspace = 'my_keyspace'
     session  = cluster.connect(keyspace)
     session.execute('SELECT * FROM authors').each do |rows|
-      puts "The keyspace #{row['keyspace_name']} has a table called #{row['columnfamily_name']}"
+      puts rows
+      rows.each do |row|
+        puts "espacio1: #{row[0]} espacio2: #{row[1]}"
+      end
     end
   end
 end
