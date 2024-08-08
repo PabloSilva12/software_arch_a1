@@ -1,0 +1,22 @@
+<h1>Top Rated Books</h1>
+
+<table>
+  <thead>
+    <tr>
+      <th>Title</th>
+      <th>Author</th>
+      <th>Average Rating</th>
+      <th>Number of Reviews</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @top_rated_books.each do |book| %>
+      <tr>
+        <td><%= book['title'] %></td>
+        <td><%= book['author_name'] %></td>
+        <td><%= book['average_rating'] %></td>
+        <td><%= book['number_of_reviews'] %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

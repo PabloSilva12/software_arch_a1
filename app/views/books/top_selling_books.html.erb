@@ -1,0 +1,20 @@
+<h1>Top Selling Books</h1>
+
+<table>
+  <thead>
+    <tr>
+      <th>Title</th>
+      <th>Author</th>
+      <th>Sales Count</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @top_selling_books.each do |book| %>
+      <tr>
+        <td><%= book['title'] %></td>
+        <td><%= book['author_name'] %></td>
+        <td><%= book['sales_count'] %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
