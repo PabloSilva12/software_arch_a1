@@ -44,11 +44,17 @@ class BooksController < ApplicationController
   end
 
   def show
-    @book = run_selecting_query(TABLE_NAME, "id = #{params[:id]}")
+    result = run_selecting_query(TABLE_NAME, "id = #{params[:id]}")
+    result.each do |b|
+      @book = b
+    end
   end
 
   def edit
-    @to_edit = run_selecting_query(TABLE_NAME, "id = #{params[:id]}")
+    result = run_selecting_query(TABLE_NAME, "id = #{params[:id]}")
+    result.each do |s|
+      @to_edit = s
+    end
   end
 
   def update

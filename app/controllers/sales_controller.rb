@@ -7,11 +7,17 @@ class SalesController < ApplicationController
   end
 
   def show
-    @sale = run_selecting_query(TABLE_NAME, "id = #{params[:id]}")
+    result = run_selecting_query(TABLE_NAME, "id = #{params[:id]}")
+    result.each do |s|
+      @sale = s
+    end
   end
 
   def edit
-    @to_edit = run_selecting_query(TABLE_NAME, "id = #{params[:id]}")
+    result = run_selecting_query(TABLE_NAME, "id = #{params[:id]}")
+    result.each do |s|
+      @to_edit = s
+    end
   end
 
   def update

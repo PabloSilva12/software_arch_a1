@@ -22,11 +22,17 @@ class AuthorsController < ApplicationController
   end
 
   def show
-    @author = run_selecting_query(TABLE_NAME, "id = #{params[:id]}")
+    result = run_selecting_query(TABLE_NAME, "id = #{params[:id]}")
+    result.each do |a|
+      @author = a
+    end
   end
 
   def edit
-    @to_edit = run_selecting_query(TABLE_NAME, "id = #{params[:id]}")
+    result = run_selecting_query(TABLE_NAME, "id = #{params[:id]}")
+    result.each do |s|
+      @to_edit = s
+    end
   end
 
   def update
@@ -59,7 +65,7 @@ class AuthorsController < ApplicationController
     run_inserting_query(TABLE_NAME, filled_params)
   end
 
-  def delete
+  def destroy
     run_delete_query_by_id(TABLE_NAME, params[:id])
   end
 end
