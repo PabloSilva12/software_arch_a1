@@ -6,5 +6,5 @@
 
 
 <%= link_to 'Edit', edit_review_path(@review['id']) %> |
-<%= link_to 'Delete', review_path(@review['id']), method: :delete, data: { confirm: 'Are you sure?' } %> |
+<%=link_to 'Delete',review_path(@review['id']) , data: { turbo_method: "delete" }%>|
 <%= link_to 'Back to Reviews', reviews_path %>
