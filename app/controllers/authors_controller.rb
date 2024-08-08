@@ -71,7 +71,7 @@ class AuthorsController < ApplicationController
 end
 
 
-@session = Cassandra.cluster(hosts: CASSANDRA_CONFIG[:hosts], port: CASSANDRA_CONFIG[:port]).connect("keyspace")
+@session = Cassandra.cluster(hosts: CASSANDRA_CONFIG[:hosts], port: CASSANDRA_CONFIG[:port]).connect('my_keyspace')
 
 
 
