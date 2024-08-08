@@ -1,3 +1,4 @@
+require 'cassandra'
 module DatabaseInteractions
 
   extend ActiveSupport::Concern

@@ -5,4 +5,16 @@ Rails.application.routes.draw do
   # root "articles#index"
 
   resources :tables
+  resources :authors do
+    get "edit"
+  end
+  resources :sales do
+    get "edit"
+  end
+  resources :reviews do
+    get "edit"
+  end
+  resources :books do
+    get "edit"
+  end
 end
