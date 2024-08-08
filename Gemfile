@@ -69,3 +69,4 @@ end
 gem 'cassandra-driver'
 
 gem 'sorted_set'
+
