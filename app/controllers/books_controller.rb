@@ -91,3 +91,5 @@ class BooksController < ApplicationController
     run_delete_query_by_id(TABLE_NAME, params[:id])
   end
 end
+
+@session = Cassandra.cluster(hosts: CASSANDRA_CONFIG[:hosts], port: CASSANDRA_CONFIG[:port]).connect("keyspace")
