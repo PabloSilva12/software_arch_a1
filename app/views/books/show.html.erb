@@ -1,9 +1,10 @@
-<h1>Book Details</h1>
+<h1><%= @book['name'] %></h1>
 
-<p><strong>Title:</strong> <%= @book['title'] %></p>
-<p><strong>Author:</strong> <%= @book['author_name'] %></p>
-<p><strong>Average Rating:</strong> <%= @book['average_rating'] %></p>
-<p><strong>Sales Count:</strong> <%= @book['sales_count'] %></p>
+<p>Summary: <%= @book['summary'] %></p>
+<p>Date of Publication: <%= @book['date_of_publication'] %></p>
+<p>Number of Sales: <%= @book['number_of_sales'] %></p>
+<p>Author ID: <%= @book['author_id'] %></p>
+
 
 <%= link_to 'Edit', edit_book_path(@book['id']) %> |
 <%= link_to 'Delete', book_path(@book['id']), method: :delete, data: { confirm: 'Are you sure?' } %> |

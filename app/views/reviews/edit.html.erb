@@ -1,29 +1,20 @@
 <h1>Edit Review</h1>
+<%= form_with url: review_path(@id), method: :patch, local: true do %>
+  <%= label_tag :review %>
+  <%= text_area_tag :review, @review['review'] %><br>
 
-<%= form_with url: review_path(@review['id']), method: :patch, local: true do |form| %>
-  <p>
-    <%= form.label :book_title %><br>
-    <%= form.text_field :book_title, value: @review['book_title'] %>
-  </p>
-  
-  <p>
-    <%= form.label :reviewer_name %><br>
-    <%= form.text_field :reviewer_name, value: @review['reviewer_name'] %>
-  </p>
-  
-  <p>
-    <%= form.label :rating %><br>
-    <%= form.number_field :rating, step: 0.1, value: @review['rating'] %>
-  </p>
-  
-  <p>
-    <%= form.label :comment %><br>
-    <%= form.text_area :comment, value: @review['comment'] %>
-  </p>
+  <%= label_tag :score %>
+  <%= number_field_tag :score, @review['score'] %><br>
 
-  <p>
-    <%= form.submit 'Update Review' %>
-  </p>
+  <%= label_tag :number_of_up_votes %>
+  <%= number_field_tag :number_of_up_votes, @review['number_of_up_votes'] %><br>
+
+  <%= label_tag :book_id %>
+  <%= text_field_tag :book_id, @review['book_id'] %><br>
+
+  <%= hidden_field_tag :id, @review['id'] %>
+  
+  <%= submit_tag 'Update Review' %>
 <% end %>
+<%= link_to 'Back', review_path(@review['id']) %>
 
-<%= link_to 'Back to Reviews', reviews_path %>

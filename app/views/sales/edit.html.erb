@@ -1,24 +1,16 @@
 <h1>Edit Sale</h1>
+<%= form_with url: sale_path(@id), method: :patch, local: true do %>
+  <%= label_tag :book_id %>
+  <%= text_field_tag :book_id, @sale['book_id'] %><br>
 
-<%= form_with url: sale_path(@sale['id']), method: :patch, local: true do |form| %>
-  <p>
-    <%= form.label :book_title %><br>
-    <%= form.text_field :book_title, value: @sale['book_title'] %>
-  </p>
-  
-  <p>
-    <%= form.label :copies_sold %><br>
-    <%= form.number_field :copies_sold, value: @sale['copies_sold'] %>
-  </p>
-  
-  <p>
-    <%= form.label :date %><br>
-    <%= form.date_field :date, value: @sale['date'] %>
-  </p>
+  <%= label_tag :year %>
+  <%= number_field_tag :year, @sale['year'] %><br>
 
-  <p>
-    <%= form.submit 'Update Sale' %>
-  </p>
+  <%= label_tag :sales %>
+  <%= number_field_tag :sales, @sale['sales'] %><br>
+
+  <%= hidden_field_tag :id, @sale['id'] %>
+  
+  <%= submit_tag 'Update Sale' %>
 <% end %>
-
-<%= link_to 'Back to Sales', sales_path %>
+<%= link_to 'Back', sale_path(@sale['id']) %>

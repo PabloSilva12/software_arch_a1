@@ -1,24 +1,19 @@
 <h1>Edit Author</h1>
+<%= form_with url: author_path(@id), method: :patch, local: true do %>
+  <%= label_tag :name %>
+  <%= text_field_tag :name, @author['name'] %><br>
 
-<%= form_with url: author_path(@author['id']), method: :patch, local: true do |form| %>
-  <p>
-    <%= form.label :name %><br>
-    <%= form.text_field :name, value: @author['name'] %>
-  </p>
-  
-  <p>
-    <%= form.label :biography %><br>
-    <%= form.text_area :biography, value: @author['biography'] %>
-  </p>
-  
-  <p>
-    <%= form.label :books_count %><br>
-    <%= form.number_field :books_count, value: @author['books_count'] %>
-  </p>
+  <%= label_tag :date_of_birth %>
+  <%= date_field_tag :date_of_birth, @author['date_of_birth'] %><br>
 
-  <p>
-    <%= form.submit 'Update Author' %>
-  </p>
+  <%= label_tag :country_of_origin %>
+  <%= text_field_tag :country_of_origin, @author['country_of_origin'] %><br>
+
+  <%= label_tag :short_description %>
+  <%= text_area_tag :short_description, @author['short_description'] %><br>
+
+  <%= hidden_field_tag :id, @author['id'] %>
+  
+  <%= submit_tag 'Update Author' %>
 <% end %>
-
-<%= link_to 'Back to Authors', authors_path %>
+<%= link_to 'Back', author_path(@author['id']) %>

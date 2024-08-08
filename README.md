@@ -5,7 +5,6 @@ This is the code for the assignment 1 of the course software architecture. The a
 ## Prerequisites
 
 - Docker
-- Docker Compose
 
 ## Getting Started
 

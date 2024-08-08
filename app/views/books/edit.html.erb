@@ -1,29 +1,22 @@
 <h1>Edit Book</h1>
+<%= form_with url: book_path(@id), method: :patch, local: true do %>
+  <%= label_tag :name %>
+  <%= text_field_tag :name, @book['name'] %><br>
 
-<%= form_with url: book_path(@book['id']), method: :patch, local: true do |form| %>
-  <p>
-    <%= form.label :title %><br>
-    <%= form.text_field :title, value: @book['title'] %>
-  </p>
-  
-  <p>
-    <%= form.label :author_name %><br>
-    <%= form.text_field :author_name, value: @book['author_name'] %>
-  </p>
-  
-  <p>
-    <%= form.label :average_rating %><br>
-    <%= form.number_field :average_rating, step: 0.1, value: @book['average_rating'] %>
-  </p>
-  
-  <p>
-    <%= form.label :sales_count %><br>
-    <%= form.number_field :sales_count, value: @book['sales_count'] %>
-  </p>
+  <%= label_tag :summary %>
+  <%= text_area_tag :summary, @book['summary'] %><br>
 
-  <p>
-    <%= form.submit 'Update Book' %>
-  </p>
+  <%= label_tag :date_of_publication %>
+  <%= date_field_tag :date_of_publication, @book['date_of_publication'] %><br>
+
+  <%= label_tag :number_of_sales %>
+  <%= number_field_tag :number_of_sales, @book['number_of_sales'] %><br>
+
+  <%= label_tag :author_id %>
+  <%= text_field_tag :author_id, @book['author_id'] %><br>
+
+  <%= hidden_field_tag :id, @book['id'] %>
+  
+  <%= submit_tag 'Update Book' %>
 <% end %>
-
-<%= link_to 'Back to Books', books_path %>
+<%= link_to 'Back', book_path(@book['id']) %>

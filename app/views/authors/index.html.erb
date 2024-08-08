@@ -1,18 +1,21 @@
 <h1>Authors</h1>
-
 <table>
   <thead>
     <tr>
       <th>Name</th>
-      <th>Number of Books</th>
+      <th>Date of Birth</th>
+      <th>Country of Origin</th>
+      <th>Short Description</th>
       <th>Actions</th>
     </tr>
   </thead>
   <tbody>
-    <% @results.each do |author| %>
+    <% @authors.each do |author| %>
       <tr>
         <td><%= author['name'] %></td>
-        <td><%= author['books_count'] %></td>
+        <td><%= author['date_of_birth'] %></td>
+        <td><%= author['country_of_origin'] %></td>
+        <td><%= author['short_description'] %></td>
         <td><%= link_to 'Show', author_path(author['id']) %></td>
       </tr>
     <% end %>

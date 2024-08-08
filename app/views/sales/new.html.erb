@@ -1,24 +1,16 @@
 <h1>New Sale</h1>
+<%= form_with url: sales_path, local: true do %>
+  <%= label_tag :book_id %>
+  <%= text_field_tag :book_id %><br>
 
-<%= form_with url: sales_path, method: :post, local: true do |form| %>
-  <p>
-    <%= form.label :book_title %><br>
-    <%= form.text_field :book_title %>
-  </p>
-  
-  <p>
-    <%= form.label :copies_sold %><br>
-    <%= form.number_field :copies_sold %>
-  </p>
-  
-  <p>
-    <%= form.label :date %><br>
-    <%= form.date_field :date %>
-  </p>
+  <%= label_tag :year %>
+  <%= number_field_tag :year %><br>
 
-  <p>
-    <%= form.submit 'Create Sale' %>
-  </p>
+  <%= label_tag :sales %>
+  <%= number_field_tag :sales %><br>
+
+  <%= hidden_field_tag :id, SecureRandom.uuid %>
+
+  <%= submit_tag 'Create Sale' %>
 <% end %>
-
-<%= link_to 'Back to Sales', sales_path %>
+<%= link_to 'Back', sales_path %>

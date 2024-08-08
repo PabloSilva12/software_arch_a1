@@ -1,9 +1,9 @@
 <h1>Review Details</h1>
+<p>Review: <%= @review['review'] %></p>
+<p>Score: <%= @review['score'] %></p>
+<p>Number of Up Votes: <%= @review['number_of_up_votes'] %></p>
+<p>Book ID: <%= @review['book_id'] %></p>
 
-<p><strong>Book Title:</strong> <%= @review['book_title'] %></p>
-<p><strong>Reviewer:</strong> <%= @review['reviewer_name'] %></p>
-<p><strong>Rating:</strong> <%= @review['rating'] %></p>
-<p><strong>Comment:</strong> <%= @review['comment'] %></p>
 
 <%= link_to 'Edit', edit_review_path(@review['id']) %> |
 <%= link_to 'Delete', review_path(@review['id']), method: :delete, data: { confirm: 'Are you sure?' } %> |
