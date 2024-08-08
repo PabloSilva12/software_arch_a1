@@ -71,6 +71,14 @@ class BooksController < ApplicationController
   end
 
   def create
+    filled_params = {}
+    params[:upd_form].each do |key, value|
+      if value.present?
+        filled_params[key] = value
+      end
+    end
+
+    run_inserting_query(TABLE_NAME, filled_params)
   end
 
   def delete
