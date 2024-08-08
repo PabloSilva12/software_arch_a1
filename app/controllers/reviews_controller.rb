@@ -7,13 +7,27 @@ class ReviewsController < ApplicationController
   end
 
   def show
-    @result = run_selecting_query(TABLE_NAME, params[:id])
+    @review = run_selecting_query(TABLE_NAME, "id = #{params[:id]}")
   end
 
   def edit
+    @to_edit = run_selecting_query(TABLE_NAME, "id = #{params[:id]}")
   end
 
   def update
+    filled_params = {}
+    params[:upd_form].each do |key, value|
+      if value.present?
+        filled_params[key] = value
+      end
+    end
+
+    filled_params.each do |key, value|
+      if key != "id" do
+        run_update_query(TABLE_NAME, params[:id], key, value)
+      end
+    end
+
   end
 
   def new
