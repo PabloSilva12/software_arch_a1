@@ -16,19 +16,28 @@ module DatabaseInteractions
       hosts: CASSANDRA_CONFIG[:hosts],
       port: CASSANDRA_CONFIG[:port]
     )
-    session  = cluster.connect(KEYSPACE)
+    session = cluster.connect(KEYSPACE)
     base_parameters = COLUMNS_BY_TABLE[table_name]
     string_of_base = ""
     string_of_set = ""
+
     base_parameters.each_with_index do |column, index|
       string_of_base += column
-      string_of_base += ", " unless index == columns.length - 1
+      string_of_base += ", " unless index == base_parameters.length - 1
       if index != 0
-        string_of_set += "'#{parameter[column]}'"
-        string_of_set += ", " unless index == columns.length - 1
+        value = parameters[column]
+        # Check if the value is a numeric type (Fixnum for integers, Float for floating-point numbers)
+        if value.is_a?(Integer) || value.is_a?(Float)
+          string_of_set += value.to_s
+        else
+          string_of_set += "'#{value}'"  # For strings, keep the quotes
+        end
+        string_of_set += ", " unless index == base_parameters.length - 1
       end
     end
+
     query = "INSERT INTO #{KEYSPACE}.#{table_name} (#{string_of_base}) VALUES (uuid(), #{string_of_set});"
+    puts query  # For debugging
     session.execute(query)
   end
 

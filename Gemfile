@@ -70,3 +70,4 @@ gem 'cassandra-driver'
 
 gem 'sorted_set'
 
+gem 'faker'
