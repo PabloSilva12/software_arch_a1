@@ -1,0 +1,29 @@
+<h1>Edit Book</h1>
+
+<%= form_with url: book_path(@book['id']), method: :patch, local: true do |form| %>
+  <p>
+    <%= form.label :title %><br>
+    <%= form.text_field :title, value: @book['title'] %>
+  </p>
+  
+  <p>
+    <%= form.label :author_name %><br>
+    <%= form.text_field :author_name, value: @book['author_name'] %>
+  </p>
+  
+  <p>
+    <%= form.label :average_rating %><br>
+    <%= form.number_field :average_rating, step: 0.1, value: @book['average_rating'] %>
+  </p>
+  
+  <p>
+    <%= form.label :sales_count %><br>
+    <%= form.number_field :sales_count, value: @book['sales_count'] %>
+  </p>
+
+  <p>
+    <%= form.submit 'Update Book' %>
+  </p>
+<% end %>
+
+<%= link_to 'Back to Books', books_path %>

@@ -1,0 +1,22 @@
+<h1>Sales</h1>
+
+<table>
+  <thead>
+    <tr>
+      <th>Book Title</th>
+      <th>Copies Sold</th>
+      <th>Date</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @results.each do |sale| %>
+      <tr>
+        <td><%= sale['book_title'] %></td>
+        <td><%= sale['copies_sold'] %></td>
+        <td><%= sale['date'] %></td>
+        <td><%= link_to 'Show', sale_path(sale['id']) %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

@@ -1,0 +1,22 @@
+<h1>Reviews</h1>
+
+<table>
+  <thead>
+    <tr>
+      <th>Book Title</th>
+      <th>Reviewer</th>
+      <th>Rating</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @results.each do |review| %>
+      <tr>
+        <td><%= review['book_title'] %></td>
+        <td><%= review['reviewer_name'] %></td>
+        <td><%= review['rating'] %></td>
+        <td><%= link_to 'Show', review_path(review['id']) %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

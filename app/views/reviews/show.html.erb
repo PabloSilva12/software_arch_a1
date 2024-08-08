@@ -1,0 +1,10 @@
+<h1>Review Details</h1>
+
+<p><strong>Book Title:</strong> <%= @review['book_title'] %></p>
+<p><strong>Reviewer:</strong> <%= @review['reviewer_name'] %></p>
+<p><strong>Rating:</strong> <%= @review['rating'] %></p>
+<p><strong>Comment:</strong> <%= @review['comment'] %></p>
+
+<%= link_to 'Edit', edit_review_path(@review['id']) %> |
+<%= link_to 'Delete', review_path(@review['id']), method: :delete, data: { confirm: 'Are you sure?' } %> |
+<%= link_to 'Back to Reviews', reviews_path %>
