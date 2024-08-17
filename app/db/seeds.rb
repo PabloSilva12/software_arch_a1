@@ -1,5 +1,5 @@
 require 'faker'
-require_relative '../app/controllers/database_interaction.rb'
+require "#{Rails.root}/app/controllers/concerns/database_interactions.rb"
 
 include DatabaseInteractions
 
