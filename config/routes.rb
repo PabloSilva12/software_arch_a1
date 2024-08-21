@@ -24,5 +24,4 @@ Rails.application.routes.draw do
     get "top_selling", on: :collection
     get "search", on: :collection
   end
-
 end

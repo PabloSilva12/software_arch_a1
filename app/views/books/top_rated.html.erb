@@ -1,0 +1,36 @@
+<h1>Top Rated Books</h1>
+
+<table>
+  <thead>
+    <tr>
+      <th>Position</th>
+      <th>Title</th>
+      <th>Average Rating</th>
+      <th>Best Review (Upvotes)</th>
+      <th>Lowest Review (Upvotes)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @top_books.each_with_index do |book, index| %>
+      <tr>
+        <td><%= index + 1 %></td>
+        <td><%= book['name'] %></td>
+        <td><%= book['avg_score'] %></td>
+        <td>
+          <% if book['highest_review'] %>
+            <%= book['highest_review']['review'] %> (<%= book['highest_review']['number_of_up_votes'] %> upvotes)
+          <% else %>
+            N/A
+          <% end %>
+        </td>
+        <td>
+          <% if book['lowest_review'] %>
+            <%= book['lowest_review']['review'] %> (<%= book['lowest_review']['number_of_up_votes'] %> upvotes)
+          <% else %>
+            N/A
+          <% end %>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
