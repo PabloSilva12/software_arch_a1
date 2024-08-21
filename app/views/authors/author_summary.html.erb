@@ -1,10 +1,26 @@
 <h1>Author Summary</h1>
+
+<!-- Sorting and Filtering Form -->
+<%= form_with url: author_summary_authors_path, method: :get, local: true do %>
+  <div>
+    <label for="filter_by">Filter by:</label>
+    <%= select_tag :filter_by, options_for_select([['Name', 'name'], ['Books Count', 'books_count'], ['Average Score', 'average_score'], ['Total Sales', 'total_sales']], params[:filter_by]) %>
+    
+    <label for="filter_value">Filter value:</label>
+    <%= text_field_tag :filter_value, params[:filter_value] %>
+    
+    <%= submit_tag 'Apply' %>
+  </div>
+<% end %>
+
+<!-- Displaying Results -->
 <table>
   <tr>
-    <th>Name</th>
-    <th>Books Count</th>
-    <th>Average Score</th>
-    <th>Total Sales</th>
+    <%['name', 'books_count', 'average_score', 'total_sales'].each do |column|%>
+      <th>
+        <%= link_to "#{column.humanize} #{params[:sort_by] == column ? (params[:sort_order] == 'desc' ? '↑' : '↓') : ''}", author_summary_authors_path(sort_by: column, sort_order: params[:sort_by] == column && params[:sort_order] == 'asc' ? 'desc' : 'asc') %>
+      </th>
+    <% end %>
   </tr>
   <% @results.each do |author| %>
     <tr>

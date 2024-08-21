@@ -3,9 +3,8 @@ class AuthorsController < ApplicationController
   TABLE_NAME = 'authors'
 
   before_action :session_connection
-  
+
   def author_summary
-    session_connection
     query = "SELECT id, name FROM authors"
     authors = @session.execute(query).to_a
   
@@ -49,12 +48,18 @@ class AuthorsController < ApplicationController
       author.merge('books_count' => books_count, 'average_score' => average_score, 'total_sales' => total_sales)
     end
   
-    # Apply sorting and filtering if provided
-    @results.sort_by! { |author| author[params[:sort_by]] } if params[:sort_by]
-    @results.select! { |author| author[params[:filter_by]].to_s.include?(params[:filter_value]) } if params[:filter_by]
+    # Handle sorting
+    if params[:sort_by]
+      sort_order = params[:sort_order] == 'desc' ? 'desc' : 'asc'
+      @results.sort_by! { |author| author[params[:sort_by]].to_s }
+      @results.reverse! if sort_order == 'desc'
+    end
+  
+    # Apply filtering
+    if params[:filter_by] && params[:filter_value]
+      @results.select! { |author| author[params[:filter_by]].to_s.include?(params[:filter_value]) }
+    end
   end
-  
-  
 
   def index
     @results = run_selecting_query(TABLE_NAME)
