@@ -1,21 +1,17 @@
-<h1>Summary for <%= @author['name'] %></h1>
-
-<h2>Books</h2>
+<h1>Author Summary</h1>
 <table>
-  <thead>
+  <tr>
+    <th>Name</th>
+    <th>Books Count</th>
+    <th>Average Score</th>
+    <th>Total Sales</th>
+  </tr>
+  <% @results.each do |author| %>
     <tr>
-      <th>Title</th>
-      <th>Average Rating</th>
-      <th>Number of Reviews</th>
+      <td><%= author['name'] %></td>
+      <td><%= author['books_count'] %></td>
+      <td><%= author['average_score'] %></td>
+      <td><%= author['total_sales'] %></td>
     </tr>
-  </thead>
-  <tbody>
-    <% @author_books.each do |book| %>
-      <tr>
-        <td><%= book['title'] %></td>
-        <td><%= book['average_rating'] %></td>
-        <td><%= book['number_of_reviews'] %></td>
-      </tr>
-    <% end %>
-  </tbody>
+  <% end %>
 </table>
