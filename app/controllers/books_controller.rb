@@ -74,10 +74,52 @@ class BooksController < ApplicationController
   end
   
   def search
-    query = "SELECT * FROM books WHERE summary LIKE ?"
-    @books = @session.execute(query, arguments: ["%#{params[:query]}%"]).to_a
-    @books = @books.paginate(page: params[:page], per_page: 10)
+    # Obtener todos los libros
+    books_query = "SELECT * FROM books"
+    all_books = @session.execute(books_query).to_a
+  
+    if params[:query].present?
+      # Filtrar en Ruby
+      search_terms = params[:query].split(/\s+/)
+      @books = all_books.select do |book|
+        search_terms.any? { |term| book['summary'].downcase.include?(term.downcase) }
+      end
+  
+      # Implementar paginación manual
+      per_page = 10
+      page = params[:page].to_i > 0 ? params[:page].to_i : 1
+      total_books = @books.size
+      @books = @books.slice((page - 1) * per_page, per_page) || []
+  
+      @total_pages = (total_books / per_page.to_f).ceil
+      @current_page = page
+  
+      # Obtener los IDs de los autores de los libros filtrados
+      author_ids = @books.map { |book| book['author_id'] }.uniq
+  
+      # Obtener nombres de autores usando múltiples consultas
+      authors = []
+      author_ids.each do |author_id|
+        author_query = "SELECT id, name FROM authors WHERE id = ?"
+        author = @session.execute(author_query, arguments: [author_id]).first
+        authors << author if author
+      end
+  
+      # Crear un hash para mapear los IDs de los autores a sus nombres
+      @authors_map = authors.each_with_object({}) do |author, hash|
+        hash[author['id']] = author['name']
+      end
+    else
+      @books = []
+      @total_pages = 0
+      @current_page = 0
+      @authors_map = {}
+    end
   end
+  
+  
+  
+  
 
   def index
     @results = run_selecting_query(TABLE_NAME)
