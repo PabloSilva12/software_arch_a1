@@ -5,15 +5,20 @@
     <tr>
       <th>Title</th>
       <th>Author</th>
-      <th>Sales Count</th>
+      <th>Total Sales</th>
+      <th>Total Sales by Author</th>
+      <th>Top 5 Selling in Year</th>
     </tr>
   </thead>
   <tbody>
     <% @top_selling_books.each do |book| %>
       <tr>
-        <td><%= book['title'] %></td>
+        <td><%= book['name'] %></td>
         <td><%= book['author_name'] %></td>
-        <td><%= book['sales_count'] %></td>
+        <td><%= book['total_sales'] %></td>
+        <td>
+          <%= book['top_5_in_year'] %>
+        </td>
       </tr>
     <% end %>
   </tbody>
