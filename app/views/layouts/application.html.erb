@@ -52,7 +52,7 @@
       </ul>
     </div>
   </nav>
-  <div class="container mt-3">
+  <div class="container mt-2">
     <% flash.each do |key, message| %>
       <div class="alert alert-<%= key == 'notice' ? 'success' : 'danger' %>">
         <%= message %>
