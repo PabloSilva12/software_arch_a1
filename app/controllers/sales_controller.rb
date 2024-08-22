@@ -2,6 +2,8 @@ class SalesController < ApplicationController
 
   TABLE_NAME = 'sales'
 
+  before_action :session_connection
+
   def index
     @results = run_selecting_query(TABLE_NAME)
   end
@@ -53,6 +55,11 @@ class SalesController < ApplicationController
   def delete
     run_delete_query_by_id(TABLE_NAME, params[:id])
   end
-  @session = Cassandra.cluster(hosts: CASSANDRA_CONFIG[:hosts], port: CASSANDRA_CONFIG[:port]).connect('my_keyspace')
+  def destroy
+    run_delete_query_by_id(TABLE_NAME, params[:id])
+  end
+  def session_connection
+    @session = Cassandra.cluster(hosts: CASSANDRA_CONFIG[:hosts], port: CASSANDRA_CONFIG[:port]).connect('my_keyspace')
+  end
 end
 
