@@ -49,10 +49,10 @@ module DatabaseInteractions
       port: CASSANDRA_CONFIG[:port]
     )
     session  = cluster.connect(KEYSPACE)
-    if filter == 'FALSE'
-      query = "SELECT * FROM #{KEYSPACE}.#{table_name};"
+    query = if filter == 'FALSE'
+      "SELECT * FROM #{KEYSPACE}.#{table_name};"
     else
-      query = "SELECT * FROM #{KEYSPACE}.#{table_name} WHERE #{filter};"
+      "SELECT * FROM #{KEYSPACE}.#{table_name} WHERE #{filter};"
     end
     return session.execute(query)
   end
@@ -73,7 +73,14 @@ module DatabaseInteractions
       port: CASSANDRA_CONFIG[:port]
     )
     session  = cluster.connect(KEYSPACE)
-    query = "UPDATE FROM #{KEYSPACE}.#{table_name} SET #{parameter} = #{value} WHERE  id = #{id};"
+    
+    # Asegurarse de que los valores de texto estén entre comillas simples
+    value = "'#{value}'" if value.is_a?(String) 
+    # Construir la consulta de actualización correctamente
+    query = "UPDATE #{KEYSPACE}.#{table_name} SET #{parameter} = #{value} WHERE id = #{id}"
+    
+    # Ejecutar la consulta
     session.execute(query)
   end
+  
 end
