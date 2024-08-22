@@ -4,7 +4,6 @@ Rails.application.routes.draw do
   # Defines the root path route ("/")
   root "authors#index"
 
-  resources :tables
   resources :authors do
     get "edit"
     get "author_summary", on: :collection

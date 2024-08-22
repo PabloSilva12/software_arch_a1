@@ -51,11 +51,6 @@ services:
             year INT,
             sales INT,
           );
-          INSERT INTO my_keyspace.authors (id, name, date_of_birth, country_of_origin, short_description)
-          VALUES (uuid(), 'Jane Austen', '1775-12-16', 'United Kingdom', 'Famous author of novels such as Pride and Prejudice.');
-          INSERT INTO my_keyspace.authors (id, name, date_of_birth, country_of_origin, short_description)
-          VALUES (uuid(), '2', '1775-12-16', 'chile', 'second author.');
-          CREATE INDEX ON books (summary);
         "
         wait
     environment:

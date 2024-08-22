@@ -6,11 +6,47 @@
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
 
+    <%= stylesheet_link_tag "https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css", media: "all", "data-turbolinks-track": "reload" %>
+    <%= javascript_include_tag "https://code.jquery.com/jquery-3.5.1.slim.min.js", "data-turbolinks-track": "reload" %>
+    <%= javascript_include_tag "https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js", "data-turbolinks-track": "reload" %>
+    <%= javascript_include_tag "https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js", "data-turbolinks-track": "reload" %>
     <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
     <%= javascript_importmap_tags %>
   </head>
 
   <body>
-    <%= yield %>
-  </body>
+  <nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <a class="navbar-brand" href="<%= root_path %>">Home</a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav">
+        <li class="nav-item">
+          <a class="nav-link" href="<%= authors_path %>">Authors</a>
+        </li>
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            Books
+          </a>
+          <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+            <a class="dropdown-item" href="<%= books_path %>">Show</a>
+            <a class="dropdown-item" href="<%= top_rated_books_path %>">Top Rated</a>
+            <a class="dropdown-item" href="<%= top_selling_books_path %>">Top Selling</a>
+            <a class="dropdown-item" href="<%= search_books_path %>">Search</a>
+          </div>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="<%= sales_path %>">Sales</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="<%= reviews_path %>">Reviews</a>
+        </li>
+      </ul>
+    </div>
+  </nav>
+  
+  <%= yield %>
+</body>
+
 </html>
