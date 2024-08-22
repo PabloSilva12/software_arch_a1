@@ -99,14 +99,20 @@ class AuthorsController < ApplicationController
   end
 
   def create
-    filled_params = {}
-    params[:upd_form].each do |key, value|
-      if value.present?
-        filled_params[key] = value
-      end
-    end
-
+    # Obteniendo los parámetros directamente
+    filled_params = {
+      'id' => params[:id],
+      'name' => params[:name],
+      'date_of_birth' => params[:date_of_birth],
+      'country_of_origin' => params[:country_of_origin],
+      'short_description' => params[:short_description]
+    }
+  
+    # Insertando en la base de datos
     run_inserting_query(TABLE_NAME, filled_params)
+  
+    # Redireccionar al índice de autores después de crear
+    redirect_to authors_path, notice: 'Author was successfully created.'
   end
 
   def destroy
