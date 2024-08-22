@@ -39,17 +39,19 @@ class SalesController < ApplicationController
   end
 
   def new
+    @books = run_selecting_query("books")
   end
 
   def create
     filled_params = {}
-    params[:upd_form].each do |key, value|
+    params.each do |key, value|
       if value.present?
-        filled_params[key] = value
+        filled_params[key] = convert_to_number(value)
       end
     end
-
+    filled_params["book_id"] = Cassandra::Uuid.new(filled_params["book_id"])
     run_inserting_query(TABLE_NAME, filled_params)
+    redirect_to sales_path
   end
 
   def delete
@@ -62,4 +64,3 @@ class SalesController < ApplicationController
     @session = Cassandra.cluster(hosts: CASSANDRA_CONFIG[:hosts], port: CASSANDRA_CONFIG[:port]).connect('my_keyspace')
   end
 end
-

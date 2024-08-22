@@ -9,8 +9,8 @@
   <%= label_tag :number_of_up_votes %>
   <%= number_field_tag :number_of_up_votes %><br>
 
-  <%= label_tag :book_id %>
-  <%= text_field_tag :book_id %><br>
+  <%= label_tag :book_id, "Select Book" %>
+  <%= select_tag :book_id, options_for_select(@books.map { |book| [book["name"], book["id"]] }) %><br>
 
   <%= hidden_field_tag :id, SecureRandom.uuid %>
 
