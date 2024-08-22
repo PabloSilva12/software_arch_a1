@@ -133,36 +133,78 @@ class BooksController < ApplicationController
   end
 
   def edit
-    result = run_selecting_query(TABLE_NAME, "id = #{params[:id]}")
+    # Convertir el author_id a UUID usando el parámetro correcto
+    book_id = Cassandra::Uuid.new(params[:book_id])
+    
+    # Ejecutar la consulta con el UUID
+    result = run_selecting_query(TABLE_NAME, "id = #{book_id}")
+    
     result.each do |s|
       @to_edit = s
     end
   end
 
   def update
-    filled_params = {}
-    params[:upd_form].each do |key, value|
-      filled_params[key] = value if value.present?
-    end
-
+    book_id = Cassandra::Uuid.new(params[:id])
+    author_id = Cassandra::Uuid.new(params[:author_id])
+  
+    filled_params = {
+      'name' => params[:name],
+      'summary' => params[:summary],
+      'date_of_publication' => params[:date_of_publication],
+      'number_of_sales' => params[:number_of_sales].to_i,
+      'author_id' => author_id
+    }
+  
     filled_params.each do |key, value|
-      run_update_query(TABLE_NAME, params[:id], key, value) if key != "id"
+      if value.present?
+        run_update_query(TABLE_NAME, book_id, key, value)
+      end
     end
+  
+    redirect_to book_path(book_id)
   end
+  
 
   def new
-  end
-
-  def create
-    filled_params = {}
-    params[:upd_form].each do |key, value|
-      filled_params[key] = value if value.present?
+    # Obtener todos los autores
+    authors_query = "SELECT id, name FROM authors"
+    authors = @session.execute(authors_query).to_a
+    
+    # Convertir a un array de hashes
+    @authors = authors.map do |author|
+      {
+        'id' => author['id'].to_s,  # Convertir ID a string si no lo es ya
+        'name' => author['name']
+      }
     end
-    run_inserting_query(TABLE_NAME, filled_params)
   end
+  
+  
+  
+  def create
+    author_id = Cassandra::Uuid.new(params[:author_id])
+    # Obteniendo los parámetros directamente
+    filled_params = {
+      'id' => params[:id],
+      'name' => params[:name],
+      'summary' => params[:summary],
+      'date_of_publication' => params[:date_of_publication],
+      'number_of_sales' => params[:number_of_sales].to_i,
+      'author_id' => author_id
+    }
+  
+    # Insertando en la base de datos
+    run_inserting_query(TABLE_NAME, filled_params)
+  
+    # Redireccionar al índice de libros después de crear
+    redirect_to books_path, notice: 'Book was successfully created.'
+  end
+  
 
   def destroy
     run_delete_query_by_id(TABLE_NAME, params[:id])
+    redirect_to books_path, notice: 'Book was successfully deleted.'
   end
 
   private

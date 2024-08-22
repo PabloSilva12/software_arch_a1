@@ -1,4 +1,7 @@
 <h1>Authors</h1>
+
+<%= link_to 'Create Author', new_author_path, class: 'btn btn-primary' %>
+
 <table>
   <thead>
     <tr>
@@ -16,7 +19,11 @@
         <td><%= author['date_of_birth'] %></td>
         <td><%= author['country_of_origin'] %></td>
         <td><%= author['short_description'] %></td>
-        <td><%= link_to 'Show', author_path(author['id']) %></td>
+        <td>
+          <%= link_to 'Show', author_path(author['id']), class: 'btn btn-info' %>
+          <%= link_to 'Edit', edit_author_path(author['id']), class: 'btn btn-warning' %>
+          <%= link_to 'Delete', author_path(author['id']), data: { turbo_method: "delete" }, class: 'btn btn-danger' %>
+        </td>
       </tr>
     <% end %>
   </tbody>

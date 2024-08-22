@@ -1,19 +1,19 @@
 <h1>Edit Author</h1>
-<%= form_with url: author_path(@id), method: :patch, local: true do %>
+<%= form_with url: author_path(@to_edit['id']), method: :patch, local: true do %>
   <%= label_tag :name %>
-  <%= text_field_tag :name, @author['name'] %><br>
+  <%= text_field_tag :name, @to_edit['name'] %><br>
 
   <%= label_tag :date_of_birth %>
-  <%= date_field_tag :date_of_birth, @author['date_of_birth'] %><br>
+  <%= date_field_tag :date_of_birth, @to_edit['date_of_birth'] %><br>
 
   <%= label_tag :country_of_origin %>
-  <%= text_field_tag :country_of_origin, @author['country_of_origin'] %><br>
+  <%= text_field_tag :country_of_origin, @to_edit['country_of_origin'] %><br>
 
   <%= label_tag :short_description %>
-  <%= text_area_tag :short_description, @author['short_description'] %><br>
+  <%= text_area_tag :short_description, @to_edit['short_description'] %><br>
 
-  <%= hidden_field_tag :id, @author['id'] %>
+  <%= hidden_field_tag :id, @to_edit['id'] %>
   
   <%= submit_tag 'Update Author' %>
 <% end %>
-<%= link_to 'Back', author_path(@author['id']) %>
+<%= link_to 'Back', author_path(@to_edit['id']) %>

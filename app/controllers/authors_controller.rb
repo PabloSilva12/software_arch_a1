@@ -73,45 +73,64 @@ class AuthorsController < ApplicationController
   end
 
   def edit
-    result = run_selecting_query(TABLE_NAME, "id = #{params[:id]}")
+    # Convertir el author_id a UUID usando el parámetro correcto
+    author_id = Cassandra::Uuid.new(params[:author_id])
+    
+    # Ejecutar la consulta con el UUID
+    result = run_selecting_query(TABLE_NAME, "id = #{author_id}")
+    
     result.each do |s|
       @to_edit = s
     end
   end
+  
+  
 
   def update
-    filled_params = {}
-    params[:upd_form].each do |key, value|
-      if value.present?
-        filled_params[key] = value
-      end
-    end
-
+    author_id = Cassandra::Uuid.new(params[:id])
+  
+    filled_params = {
+      'name' => params[:name],
+      'date_of_birth' => params[:date_of_birth],
+      'country_of_origin' => params[:country_of_origin],
+      'short_description' => params[:short_description]
+    }
+  
     filled_params.each do |key, value|
-      if key != "id"
-        run_update_query(TABLE_NAME, params[:id], key, value)
+      if value.present?
+        run_update_query(TABLE_NAME, author_id, key, value)
       end
     end
-
+  
+    redirect_to author_path(author_id)
   end
+  
 
   def new
   end
 
   def create
-    filled_params = {}
-    params[:upd_form].each do |key, value|
-      if value.present?
-        filled_params[key] = value
-      end
-    end
-
+    # Obteniendo los parámetros directamente
+    filled_params = {
+      'id' => params[:id],
+      'name' => params[:name],
+      'date_of_birth' => params[:date_of_birth],
+      'country_of_origin' => params[:country_of_origin],
+      'short_description' => params[:short_description]
+    }
+  
+    # Insertando en la base de datos
     run_inserting_query(TABLE_NAME, filled_params)
+  
+    # Redireccionar al índice de autores después de crear
+    redirect_to authors_path, notice: 'Author was successfully created.'
   end
 
   def destroy
     run_delete_query_by_id(TABLE_NAME, params[:id])
+    redirect_to authors_path, notice: "Author was deleted."
   end
+  
   def session_connection
     @session = Cassandra.cluster(hosts: CASSANDRA_CONFIG[:hosts], port: CASSANDRA_CONFIG[:port]).connect('my_keyspace')
   end

@@ -2,7 +2,7 @@
 
 <%= form_with url: search_books_path, method: :get, local: true do %>
   <div>
-    <%= label_tag :query, "Search by Title or Author" %>
+    <%= label_tag :query, "Search by Summary" %>
     <%= text_field_tag :query, params[:query] %>
   </div>
 

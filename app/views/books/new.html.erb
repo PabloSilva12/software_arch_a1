@@ -13,8 +13,14 @@
   <%= number_field_tag :number_of_sales %><br>
 
   <%= label_tag :author_id %>
-  <%= text_field_tag :author_id %><br>
-
+  <div>
+    <% @authors.each do |author| %>
+      <div>
+        <%= radio_button_tag :author_id, author['id'] %>
+        <%= label_tag "author_id_#{author['id']}", author['name'] %>
+      </div>
+    <% end %>
+  </div>
   <%= hidden_field_tag :id, SecureRandom.uuid %>
 
   <%= submit_tag 'Create Book' %>
