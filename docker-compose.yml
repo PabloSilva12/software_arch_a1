@@ -5,6 +5,13 @@ networks:
     driver: bridge
 
 services:
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    networks:
+      - app-network
+
   cassandra:
     image: cassandra:3.11
     ports:
@@ -74,5 +81,6 @@ services:
 
     environment:
       - RAILS_ENV=development
+      - REDIS_URL=redis://software_arch_a1-redis-1:6379
     networks:
       - app-network
