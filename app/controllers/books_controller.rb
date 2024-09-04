@@ -18,23 +18,31 @@ class BooksController < ApplicationController
       sales_query = "SELECT book_id, year, sales FROM sales"
       sales_data = @session.execute(sales_query).to_a
 
-      # Agrupar las ventas por libro y por año
-      sales_by_book_and_year = sales_data.group_by { |sale| sale['book_id'] }
+      ## Agrupar las ventas por libro
+      sales_by_book = sales_data.group_by { |sale| sale['book_id'] }
+
+      # Calcular el total de ventas para cada libro
+      total_sales_by_book = sales_by_book.transform_values { |sales| sales.sum { |sale| sale['sales'] } }
+
+      # Calcular el total de ventas para cada autor
+      total_sales_by_author = books.group_by { |book| book['author_id'] }.transform_values do |author_books|
+        author_books.sum { |book| total_sales_by_book[book['id']] || 0 }
+      end
 
       @top_selling_books = books.map do |book|
         author_name = authors_map[book['author_id']]
-        total_sales = book['number_of_sales']
-
+        total_sales = total_sales_by_book[book['id']] || 0
+  
         # Verificar si el libro estuvo en el top 5 de ventas en su año de publicación
         publication_year = book['date_of_publication'].year
-        sales_in_publication_year = sales_by_book_and_year[book['id']]&.select { |sale| sale['year'] == publication_year }&.sum { |sale| sale['sales'] } || 0
-
-        # Calcular el total de ventas para el autor
-        total_author_sales = books.select { |b| b['author_id'] == book['author_id'] }.sum { |b| b['number_of_sales'] }
-
+        sales_in_publication_year = sales_by_book[book['id']]&.select { |sale| sale['year'] == publication_year }&.sum { |sale| sale['sales'] } || 0
+  
         # Identificar si estuvo en el top 5
-        top_5_in_year = sales_by_book_and_year.values.flatten.select { |sale| sale['year'] == publication_year }
-                                            .sort_by { |sale| -sale['sales'] }.first(5).any? { |sale| sale['book_id'] == book['id'] }
+        top_5_in_year = sales_by_book.values.flatten.select { |sale| sale['year'] == publication_year }
+                                      .sort_by { |sale| -sale['sales'] }.first(5).any? { |sale| sale['book_id'] == book['id'] }
+  
+        # Calcular el total de ventas para el autor
+        total_author_sales = total_sales_by_author[book['author_id']] || 0
 
         book.merge(
           'author_name' => author_name,
@@ -214,16 +222,8 @@ class BooksController < ApplicationController
 
   def new
     # Obtener todos los autores
-    authors_query = "SELECT id, name FROM authors"
-    authors = @session.execute(authors_query).to_a
+    @authors = run_selecting_query("authors")
     
-    # Convertir a un array de hashes
-    @authors = authors.map do |author|
-      {
-        'id' => author['id'].to_s,  # Convertir ID a string si no lo es ya
-        'name' => author['name']
-      }
-    end
   end
   
   
@@ -236,7 +236,7 @@ class BooksController < ApplicationController
       'name' => params[:name],
       'summary' => params[:summary],
       'date_of_publication' => params[:date_of_publication],
-      'number_of_sales' => params[:number_of_sales].to_i,
+      'number_of_sales' => 0,
       'author_id' => author_id
     }
   

@@ -20,7 +20,14 @@ First, clone this repository to your local machine
 
 To build and start the application and Cassandra containers, run:
 
-// docker-compose up --build
+```
+ docker-compose up --build
+```
+
+Start + redis run:
+```
+ docker-compose -f docker-compose-redis.yml up --build
+```
 
 This command will:
 
@@ -39,12 +46,16 @@ http://localhost:3000
 -Go into the terminal of the rails container (the exec tab)
 -run the following command
 
-// rails db:seed
+```
+ rails db:seed
+```
 
 ### Stopping the Containers
 
 To stop and remove the containers, use:
 
-// docker-compose down
+```
+ docker-compose down
+```
 
 This will stop and remove the running containers but will keep your data intact.
