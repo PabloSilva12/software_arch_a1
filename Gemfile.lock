@@ -263,7 +263,7 @@ DEPENDENCIES
   jbuilder
   puma (~> 5.0)
   rails (~> 7.0.8, >= 7.0.8.4)
-  redis (~> 4.0)
+  redis
   redis-rails
   selenium-webdriver
   sorted_set

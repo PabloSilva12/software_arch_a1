@@ -94,13 +94,11 @@ class AuthorsController < ApplicationController
   
 
   def show
-    cache_key= "authors_show/#{params[:author_id]}"
+    cache_key= "authors_show/#{params[:id]}"
     if Rails.cache.read(cache_key).present?
       @results = Rails.cache.read(cache_key)
-      
       @results.each do |a|
         @author = a
-        puts("we enter on", @author['name'])
       end
     else
       @results = run_selecting_query(TABLE_NAME, "id = #{params[:id]}")
@@ -116,7 +114,7 @@ class AuthorsController < ApplicationController
   end
 
   def edit
-    cache_key = "authors_show/#{params[:id]}"
+    cache_key = "authors_show/#{params[:author_id]}"
     # Intentar leer la caché
     cached_result = Rails.cache.read(cache_key)
     
@@ -152,13 +150,16 @@ class AuthorsController < ApplicationController
         run_update_query(TABLE_NAME, author_id, key, value)
       end
     end
-    Rails.cache.delete("authors_show/#{author_id}")
-    Rails.cache.delete("authors_index")
-    Rails.cache.delete("authors_summary")
-  
+    update_cache
+    
     redirect_to author_path(author_id)
   end
   
+  def update_cache
+    Rails.cache.delete("authors_show/#{params[:id]}")
+    Rails.cache.delete("authors_index")
+    Rails.cache.delete("authors_summary")
+  end
 
   def new
   end
@@ -175,7 +176,8 @@ class AuthorsController < ApplicationController
   
     # Insertando en la base de datos
     run_inserting_query(TABLE_NAME, filled_params)
-  
+    update_cache
+
     # Redireccionar al índice de autores después de crear
     redirect_to authors_path, notice: 'Author was successfully created.'
   end
@@ -183,6 +185,7 @@ class AuthorsController < ApplicationController
   def destroy
     run_delete_query_by_id(TABLE_NAME, params[:id])
     redirect_to authors_path, notice: "Author was deleted."
+    update_cache
   end
   
   def session_connection
