@@ -163,31 +163,40 @@ class BooksController < ApplicationController
 
   def create
     author_id = Cassandra::Uuid.new(params[:author_id])
+    book_id = Cassandra::Uuid.new(params[:id]) # Generate book UUID
+  
+    # Prepare the data for insertion into Cassandra
     filled_params = {
-      'id' => Cassandra::Uuid.new(params[:id]), # Ensure ID is a UUID
+      'id' => book_id, # Use UUID object for Cassandra
       'name' => params[:name],
       'summary' => params[:summary],
       'date_of_publication' => params[:date_of_publication],
       'number_of_sales' => params[:number_of_sales].to_i,
-      'author_id' => author_id # Ensure author_id is a UUID
+      'author_id' => author_id # Use UUID object for Cassandra
     }
-
-    # Prepare and execute the query
+  
+    # Prepare and execute the query for Cassandra
     columns = filled_params.keys.map(&:to_s).join(', ')
     values = filled_params.values.map { |v| v.is_a?(Cassandra::Uuid) ? v.to_s : "'#{v}'" }
     values_string = values.join(', ')
     query = "INSERT INTO my_keyspace.books (id, #{columns}) VALUES (#{values_string});"
     @session.execute(query)
-
+  
+    # Prepare data for Elasticsearch by converting UUIDs to strings
+    es_data = filled_params.transform_values do |v|
+      v.is_a?(Cassandra::Uuid) ? v.to_s : v
+    end
+  
     # Index document in Elasticsearch
     begin
-      ElasticsearchClient.index_document(INDEX_NAME, filled_params['id'].to_s, filled_params)
+      ElasticsearchClient.index_document(INDEX_NAME, es_data['id'], es_data)
     rescue => e
       Rails.logger.error("Failed to index Elasticsearch document: #{e.message}")
     end
-
+  
     redirect_to books_path, notice: 'Book was successfully created.'
   end
+  
 
 
   def destroy
