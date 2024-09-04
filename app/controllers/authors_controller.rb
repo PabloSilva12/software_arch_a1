@@ -5,7 +5,6 @@ class AuthorsController < ApplicationController
   before_action :session_connection
 
   def author_summary
-    # Implementación del cache
     cache_key = "authors_summary"
     @results = Rails.cache.fetch(cache_key, expires_in: 12.hours) do
       query = "SELECT id, name FROM authors"
