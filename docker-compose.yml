@@ -61,7 +61,25 @@ services:
     networks:
       - app-network
 
+  traefik:
+    image: traefik:v2.10
+    command:
+      - "--api.insecure=true" # Enables Traefik's dashboard (for testing purposes)
+      - "--providers.docker=true" # Enables Traefik to use Docker as a provider
+      - "--entrypoints.web.address=:80" # Defines an entry point for HTTP traffic
+    ports:
+      - "80:80"     # Expose Traefik on port 80 for HTTP traffic
+      - "8080:8080" # Expose the Traefik dashboard (optional)
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock" # So Traefik can communicate with the Docker daemon
+    networks:
+      - app-network
+
   web:
+    labels:
+      - "traefik.enable=true" 
+      - "traefik.http.routers.web.rule=Host(`localhost`)" # Route traffic based on host
+      - "traefik.http.services.web.loadbalancer.server.port=3000"
     build: .
     command: bundle exec rails s -b '0.0.0.0'
     volumes:
