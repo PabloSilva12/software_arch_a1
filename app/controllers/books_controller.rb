@@ -99,7 +99,6 @@ class BooksController < ApplicationController
       @books = []
       @total_pages = 0
       @current_page = 0
-      @current_page = 0
     end
   end
 
@@ -131,7 +130,7 @@ class BooksController < ApplicationController
       'summary' => params[:summary],
       'date_of_publication' => params[:date_of_publication],
       'number_of_sales' => params[:number_of_sales].to_i,
-      'author_id' => author_id
+      'author_id' => author_id.to_s # Ensure it's a string
     }
 
     filled_params.each do |key, value|
@@ -141,7 +140,11 @@ class BooksController < ApplicationController
     end
 
     # Update Elasticsearch document
-    ElasticsearchClient.index_document(INDEX_NAME, book_id, filled_params)
+    begin
+      ElasticsearchClient.index_document(INDEX_NAME, book_id.to_s, filled_params)
+    rescue => e
+      Rails.logger.error("Failed to update Elasticsearch document: #{e.message}")
+    end
 
     redirect_to book_path(book_id)
   end
@@ -161,27 +164,41 @@ class BooksController < ApplicationController
   def create
     author_id = Cassandra::Uuid.new(params[:author_id])
     filled_params = {
-      'id' => params[:id],
+      'id' => Cassandra::Uuid.new(params[:id]), # Ensure ID is a UUID
       'name' => params[:name],
       'summary' => params[:summary],
       'date_of_publication' => params[:date_of_publication],
       'number_of_sales' => params[:number_of_sales].to_i,
-      'author_id' => author_id
+      'author_id' => author_id # Ensure author_id is a UUID
     }
 
-    run_inserting_query(TABLE_NAME, filled_params)
+    # Prepare and execute the query
+    columns = filled_params.keys.map(&:to_s).join(', ')
+    values = filled_params.values.map { |v| v.is_a?(Cassandra::Uuid) ? v.to_s : "'#{v}'" }
+    values_string = values.join(', ')
+    query = "INSERT INTO my_keyspace.books (id, #{columns}) VALUES (#{values_string});"
+    @session.execute(query)
 
     # Index document in Elasticsearch
-    ElasticsearchClient.index_document(INDEX_NAME, params[:id], filled_params)
+    begin
+      ElasticsearchClient.index_document(INDEX_NAME, filled_params['id'].to_s, filled_params)
+    rescue => e
+      Rails.logger.error("Failed to index Elasticsearch document: #{e.message}")
+    end
 
     redirect_to books_path, notice: 'Book was successfully created.'
   end
+
 
   def destroy
     run_delete_query_by_id(TABLE_NAME, params[:id])
 
     # Delete document from Elasticsearch
-    ElasticsearchClient.delete_document(INDEX_NAME, params[:id])
+    begin
+      ElasticsearchClient.delete_document(INDEX_NAME, params[:id])
+    rescue => e
+      Rails.logger.error("Failed to delete Elasticsearch document: #{e.message}")
+    end
 
     redirect_to books_path, notice: 'Book was successfully deleted.'
   end

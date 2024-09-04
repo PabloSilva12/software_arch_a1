@@ -39,8 +39,12 @@ class ReviewsController < ApplicationController
     end
 
     # Update Elasticsearch document
-    ElasticsearchClient.index_document(INDEX_NAME, params[:id], filled_params)
-    
+    begin
+      ElasticsearchClient.index_document(INDEX_NAME, params[:id], filled_params)
+    rescue => e
+      Rails.logger.error("Failed to update Elasticsearch document: #{e.message}")
+    end
+
     redirect_to review_path(params[:id]), notice: 'Review was successfully updated.'
   end
 
@@ -55,11 +59,17 @@ class ReviewsController < ApplicationController
         filled_params[key] = convert_to_number(value)
       end
     end
-    filled_params["book_id"] = Cassandra::Uuid.new(filled_params["book_id"])
+    filled_params["book_id"] = Cassandra::Uuid.new(filled_params["book_id"]) if filled_params["book_id"]
+
+    # Insert into Cassandra
     run_inserting_query(TABLE_NAME, filled_params)
 
     # Index document in Elasticsearch
-    ElasticsearchClient.index_document(INDEX_NAME, filled_params['id'], filled_params)
+    begin
+      ElasticsearchClient.index_document(INDEX_NAME, filled_params['id'].to_s, filled_params)
+    rescue => e
+      Rails.logger.error("Failed to index Elasticsearch document: #{e.message}")
+    end
 
     redirect_to reviews_path, notice: 'Review was successfully created.'
   end
@@ -68,7 +78,11 @@ class ReviewsController < ApplicationController
     run_delete_query_by_id(TABLE_NAME, params[:id])
 
     # Delete document from Elasticsearch
-    ElasticsearchClient.delete_document(INDEX_NAME, params[:id])
+    begin
+      ElasticsearchClient.delete_document(INDEX_NAME, params[:id])
+    rescue => e
+      Rails.logger.error("Failed to delete Elasticsearch document: #{e.message}")
+    end
 
     redirect_to reviews_path, notice: 'Review was successfully deleted.'
   end

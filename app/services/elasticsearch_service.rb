@@ -1,6 +1,6 @@
 class ElasticsearchService
     def initialize
-      @client = Elasticsearch::Model.client
+      @client = ElasticsearchClient.client
     end
   
     def index_book(book)
