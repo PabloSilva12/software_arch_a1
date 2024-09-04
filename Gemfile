@@ -76,4 +76,6 @@ gem 'will_paginate', '~> 3.1.0'
 
 gem 'elasticsearch', '~> 8.0'
 
+gem 'elasticsearch-rails', '~> 8.0'
+
 gem 'elasticsearch-model', '~> 8.0'

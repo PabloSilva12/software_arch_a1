@@ -25,6 +25,7 @@ module A1Architecture
   class Application < Rails::Application
     # Initialize configuration defaults for originally generated Rails version.
     config.load_defaults 7.0
+    config.autoload_paths << Rails.root.join('lib')
 
     # Configuration for the application, engines, and railties goes here.
     #

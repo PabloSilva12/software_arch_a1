@@ -102,6 +102,7 @@ GEM
       activesupport (> 3)
       elasticsearch (~> 8)
       hashie
+    elasticsearch-rails (8.0.0)
     erubi (1.13.0)
     faker (3.4.2)
       i18n (>= 1.8.11, < 2)
@@ -263,6 +264,7 @@ DEPENDENCIES
   debug
   elasticsearch (~> 8.0)
   elasticsearch-model (~> 8.0)
+  elasticsearch-rails (~> 8.0)
   faker
   importmap-rails
   jbuilder
