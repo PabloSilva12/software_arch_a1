@@ -9,18 +9,11 @@
   <%= label_tag :date_of_publication %>
   <%= date_field_tag :date_of_publication %><br>
 
-  <%= label_tag :number_of_sales %>
-  <%= number_field_tag :number_of_sales %><br>
+  <%= hidden_field_tag :number_of_sales %><br>
 
-  <%= label_tag :author_id %>
-  <div>
-    <% @authors.each do |author| %>
-      <div>
-        <%= radio_button_tag :author_id, author['id'] %>
-        <%= label_tag "author_id_#{author['id']}", author['name'] %>
-      </div>
-    <% end %>
-  </div>
+  <%= label_tag :author_id, "Select Author" %>
+  <%= select_tag :author_id, options_for_select(@authors.map { |author| [author["name"], author["id"]] }) %><br>
+
   <%= hidden_field_tag :id, SecureRandom.uuid %>
 
   <%= submit_tag 'Create Book' %>

@@ -73,3 +73,7 @@ gem 'sorted_set'
 gem 'faker'
 
 gem 'will_paginate', '~> 3.1.0'
+
+gem 'redis'
+gem 'redis-rails'
+gem 'connection_pool'
