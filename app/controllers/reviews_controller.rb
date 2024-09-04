@@ -4,6 +4,8 @@ class ReviewsController < ApplicationController
 
   before_action :session_connection
 
+  INDEX_NAME = 'reviews'
+
   def index
     @results = run_selecting_query(TABLE_NAME)
   end
@@ -36,6 +38,10 @@ class ReviewsController < ApplicationController
       end
     end
 
+    # Update Elasticsearch document
+    ElasticsearchClient.index_document(INDEX_NAME, params[:id], filled_params)
+    
+    redirect_to review_path(params[:id]), notice: 'Review was successfully updated.'
   end
 
   def new
@@ -43,7 +49,6 @@ class ReviewsController < ApplicationController
   end
 
   def create
-    puts params
     filled_params = {}
     params.each do |key, value|
       if value.present?
@@ -52,17 +57,29 @@ class ReviewsController < ApplicationController
     end
     filled_params["book_id"] = Cassandra::Uuid.new(filled_params["book_id"])
     run_inserting_query(TABLE_NAME, filled_params)
-    redirect_to reviews_path
+
+    # Index document in Elasticsearch
+    ElasticsearchClient.index_document(INDEX_NAME, filled_params['id'], filled_params)
+
+    redirect_to reviews_path, notice: 'Review was successfully created.'
   end
 
-  def delete
-    run_delete_query_by_id(TABLE_NAME, params[:id])
-  end
   def destroy
     run_delete_query_by_id(TABLE_NAME, params[:id])
+
+    # Delete document from Elasticsearch
+    ElasticsearchClient.delete_document(INDEX_NAME, params[:id])
+
+    redirect_to reviews_path, notice: 'Review was successfully deleted.'
   end
+
+  private
 
   def session_connection
     @session = Cassandra.cluster(hosts: CASSANDRA_CONFIG[:hosts], port: CASSANDRA_CONFIG[:port]).connect('my_keyspace')
+  end
+
+  def convert_to_number(value)
+    value =~ /\A\d+\z/ ? value.to_i : value
   end
 end

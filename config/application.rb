@@ -1,4 +1,7 @@
 require_relative "boot"
+# config/application.rb
+
+require_relative '../lib/elasticsearch_client'
 
 require "rails"
 # Pick the frameworks you want:

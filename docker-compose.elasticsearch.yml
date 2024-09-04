@@ -1,0 +1,102 @@
+version: '3.8'
+
+networks:
+  app-network:
+    driver: bridge
+
+services:
+  cassandra:
+    image: cassandra:3.11
+    ports:
+      - "9042:9042"
+    healthcheck:
+      test: ["CMD", "nodetool", "status"]
+      interval: 30s
+      retries: 5
+      timeout: 10s
+    command: 
+      - /bin/bash
+      - -c
+      - |
+        /docker-entrypoint.sh cassandra -f &
+        sleep 30
+        cqlsh -e "
+          CREATE KEYSPACE IF NOT EXISTS my_keyspace WITH REPLICATION = {'class': 'SimpleStrategy', 'replication_factor': 1};
+          USE my_keyspace;
+          CREATE TABLE my_keyspace.authors (
+            id UUID PRIMARY KEY,
+            name TEXT,
+            date_of_birth DATE,
+            country_of_origin TEXT,
+            short_description TEXT
+          );
+          CREATE TABLE my_keyspace.books (
+            id UUID PRIMARY KEY,
+            name TEXT,
+            summary TEXT,
+            date_of_publication DATE,
+            number_of_sales INT,
+            author_id UUID
+          );
+          CREATE TABLE my_keyspace.reviews (
+            id UUID PRIMARY KEY,
+            review TEXT,
+            score INT,
+            number_of_up_votes INT,
+            book_id UUID,
+          );
+          CREATE TABLE my_keyspace.sales (
+            id UUID PRIMARY KEY,
+            book_id UUID,
+            year INT,
+            sales INT,
+          );
+        "
+        wait
+    environment:
+      - CASSANDRA_CLUSTER_NAME=Test Cluster
+      - CASSANDRA_DC=dc1
+      - CASSANDRA_RACK=rack1
+      - CASSANDRA_ENDPOINT_SNITCH=GossipingPropertyFileSnitch
+    networks:
+      - app-network
+
+  web:
+    build: .
+    command: bundle exec rails s -b '0.0.0.0'
+    volumes:
+      - .:/var/www/my_app
+    ports:
+      - "3000:3000"
+    depends_on:
+      cassandra:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+    environment:
+      - RAILS_ENV=development
+    networks:
+      - app-network
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.9.0
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+    ports:
+      - "9200:9200"
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cat/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  esdata:
+    driver: local

@@ -1,11 +1,11 @@
 class BooksController < ApplicationController
-
   TABLE_NAME = 'books'
 
   before_action :session_connection
 
+  INDEX_NAME = 'books'
+
   def top_selling
-    # Query to fetch all books with their authors
     books_query = "SELECT id, name, author_id, number_of_sales, date_of_publication FROM books"
     books = @session.execute(books_query).to_a
 
@@ -16,21 +16,17 @@ class BooksController < ApplicationController
     sales_query = "SELECT book_id, year, sales FROM sales"
     sales_data = @session.execute(sales_query).to_a
 
-    # Agrupar las ventas por libro y por año
     sales_by_book_and_year = sales_data.group_by { |sale| sale['book_id'] }
 
     @top_selling_books = books.map do |book|
       author_name = authors_map[book['author_id']]
       total_sales = book['number_of_sales']
 
-      # Verificar si el libro estuvo en el top 5 de ventas en su año de publicación
       publication_year = book['date_of_publication'].year
       sales_in_publication_year = sales_by_book_and_year[book['id']]&.select { |sale| sale['year'] == publication_year }&.sum { |sale| sale['sales'] } || 0
 
-      # Calcular el total de ventas para el autor
       total_author_sales = books.select { |b| b['author_id'] == book['author_id'] }.sum { |b| b['number_of_sales'] }
 
-      # Identificar si estuvo en el top 5
       top_5_in_year = sales_by_book_and_year.values.flatten.select { |sale| sale['year'] == publication_year }
                                            .sort_by { |sale| -sale['sales'] }.first(5).any? { |sale| sale['book_id'] == book['id'] }
 
@@ -46,20 +42,16 @@ class BooksController < ApplicationController
   end
 
   def top_rated
-    # Query to fetch all books
     query = "SELECT id, name FROM books"
     books = @session.execute(query).to_a
 
     rated_books = books.map do |book|
       book_id = book['id']
 
-      # Calculate average rating
       avg_score = @session.execute("SELECT AVG(score) FROM reviews WHERE book_id = ? ALLOW FILTERING", arguments: [book_id]).first['system.avg(score)']
 
-      # Fetch all reviews for the book
       reviews = @session.execute("SELECT * FROM reviews WHERE book_id = ? ALLOW FILTERING", arguments: [book_id]).to_a
 
-      # Find the highest and lowest upvoted reviews
       highest_review = reviews.max_by { |review| review['number_of_up_votes'] }
       lowest_review = reviews.min_by { |review| review['number_of_up_votes'] }
 
@@ -72,40 +64,34 @@ class BooksController < ApplicationController
 
     @top_books = rated_books.sort_by { |book| -book['avg_score'] }.first(10)
   end
-  
+
   def search
-    # Obtener todos los libros
     books_query = "SELECT * FROM books"
     all_books = @session.execute(books_query).to_a
-  
+
     if params[:query].present?
-      # Filtrar en Ruby
       search_terms = params[:query].split(/\s+/)
       @books = all_books.select do |book|
         search_terms.any? { |term| book['summary'].downcase.include?(term.downcase) }
       end
-  
-      # Implementar paginación manual
+
       per_page = 10
       page = params[:page].to_i > 0 ? params[:page].to_i : 1
       total_books = @books.size
       @books = @books.slice((page - 1) * per_page, per_page) || []
-  
+
       @total_pages = (total_books / per_page.to_f).ceil
       @current_page = page
-  
-      # Obtener los IDs de los autores de los libros filtrados
+
       author_ids = @books.map { |book| book['author_id'] }.uniq
-  
-      # Obtener nombres de autores usando múltiples consultas
+
       authors = []
       author_ids.each do |author_id|
         author_query = "SELECT id, name FROM authors WHERE id = ?"
         author = @session.execute(author_query, arguments: [author_id]).first
         authors << author if author
       end
-  
-      # Crear un hash para mapear los IDs de los autores a sus nombres
+
       @authors_map = authors.each_with_object({}) do |author, hash|
         hash[author['id']] = author['name']
       end
@@ -113,13 +99,9 @@ class BooksController < ApplicationController
       @books = []
       @total_pages = 0
       @current_page = 0
-      @authors_map = {}
+      @current_page = 0
     end
   end
-  
-  
-  
-  
 
   def index
     @results = run_selecting_query(TABLE_NAME)
@@ -133,12 +115,8 @@ class BooksController < ApplicationController
   end
 
   def edit
-    # Convertir el author_id a UUID usando el parámetro correcto
     book_id = Cassandra::Uuid.new(params[:book_id])
-    
-    # Ejecutar la consulta con el UUID
     result = run_selecting_query(TABLE_NAME, "id = #{book_id}")
-    
     result.each do |s|
       @to_edit = s
     end
@@ -147,7 +125,7 @@ class BooksController < ApplicationController
   def update
     book_id = Cassandra::Uuid.new(params[:id])
     author_id = Cassandra::Uuid.new(params[:author_id])
-  
+
     filled_params = {
       'name' => params[:name],
       'summary' => params[:summary],
@@ -155,36 +133,33 @@ class BooksController < ApplicationController
       'number_of_sales' => params[:number_of_sales].to_i,
       'author_id' => author_id
     }
-  
+
     filled_params.each do |key, value|
       if value.present?
         run_update_query(TABLE_NAME, book_id, key, value)
       end
     end
-  
+
+    # Update Elasticsearch document
+    ElasticsearchClient.index_document(INDEX_NAME, book_id, filled_params)
+
     redirect_to book_path(book_id)
   end
-  
 
   def new
-    # Obtener todos los autores
     authors_query = "SELECT id, name FROM authors"
     authors = @session.execute(authors_query).to_a
-    
-    # Convertir a un array de hashes
+
     @authors = authors.map do |author|
       {
-        'id' => author['id'].to_s,  # Convertir ID a string si no lo es ya
+        'id' => author['id'].to_s,
         'name' => author['name']
       }
     end
   end
-  
-  
-  
+
   def create
     author_id = Cassandra::Uuid.new(params[:author_id])
-    # Obteniendo los parámetros directamente
     filled_params = {
       'id' => params[:id],
       'name' => params[:name],
@@ -193,17 +168,21 @@ class BooksController < ApplicationController
       'number_of_sales' => params[:number_of_sales].to_i,
       'author_id' => author_id
     }
-  
-    # Insertando en la base de datos
+
     run_inserting_query(TABLE_NAME, filled_params)
-  
-    # Redireccionar al índice de libros después de crear
+
+    # Index document in Elasticsearch
+    ElasticsearchClient.index_document(INDEX_NAME, params[:id], filled_params)
+
     redirect_to books_path, notice: 'Book was successfully created.'
   end
-  
 
   def destroy
     run_delete_query_by_id(TABLE_NAME, params[:id])
+
+    # Delete document from Elasticsearch
+    ElasticsearchClient.delete_document(INDEX_NAME, params[:id])
+
     redirect_to books_path, notice: 'Book was successfully deleted.'
   end
 
