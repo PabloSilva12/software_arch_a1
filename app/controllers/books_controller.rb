@@ -120,34 +120,46 @@ class BooksController < ApplicationController
       @to_edit = s
     end
   end
+  
 
   def update
     book_id = Cassandra::Uuid.new(params[:id])
     author_id = Cassandra::Uuid.new(params[:author_id])
-
+  
+    # Prepare the data for Cassandra
     filled_params = {
       'name' => params[:name],
       'summary' => params[:summary],
       'date_of_publication' => params[:date_of_publication],
       'number_of_sales' => params[:number_of_sales].to_i,
-      'author_id' => author_id.to_s # Ensure it's a string
+      'author_id' => author_id
     }
-
+  
+    # Update Cassandra database
     filled_params.each do |key, value|
       if value.present?
         run_update_query(TABLE_NAME, book_id, key, value)
       end
     end
+  
+    # Transform data for Elasticsearch
+    es_data = filled_params.transform_values do |v|
+      v.is_a?(Cassandra::Uuid) ? v.to_s : v
+    end
+
+    Rails.logger.debug("Updating Elasticsearch document with ID: #{book_id.to_s}")
+    Rails.logger.debug("Elasticsearch document data: #{es_data.inspect}")
 
     # Update Elasticsearch document
     begin
-      ElasticsearchClient.index_document(INDEX_NAME, book_id.to_s, filled_params)
+      ElasticsearchClient.update_document(INDEX_NAME, book_id.to_s, es_data)
     rescue => e
       Rails.logger.error("Failed to update Elasticsearch document: #{e.message}")
     end
-
-    redirect_to book_path(book_id)
+  
+    redirect_to book_path(book_id), notice: 'Book was successfully updated.'
   end
+  
 
   def new
     authors_query = "SELECT id, name FROM authors"
@@ -163,31 +175,27 @@ class BooksController < ApplicationController
 
   def create
     author_id = Cassandra::Uuid.new(params[:author_id])
-    book_id = Cassandra::Uuid.new(params[:id]) # Generate book UUID
-  
-    # Prepare the data for insertion into Cassandra
+    book_id = Cassandra::Uuid.new(params[:id])
+   
     filled_params = {
-      'id' => book_id, # Use UUID object for Cassandra
+      'id' => params[:id],
       'name' => params[:name],
       'summary' => params[:summary],
       'date_of_publication' => params[:date_of_publication],
       'number_of_sales' => params[:number_of_sales].to_i,
-      'author_id' => author_id # Use UUID object for Cassandra
+      'author_id' => author_id
     }
   
-    # Prepare and execute the query for Cassandra
-    columns = filled_params.keys.map(&:to_s).join(', ')
-    values = filled_params.values.map { |v| v.is_a?(Cassandra::Uuid) ? v.to_s : "'#{v}'" }
-    values_string = values.join(', ')
-    query = "INSERT INTO my_keyspace.books (id, #{columns}) VALUES (#{values_string});"
-    @session.execute(query)
+    
+    run_inserting_query(TABLE_NAME, filled_params)
   
-    # Prepare data for Elasticsearch by converting UUIDs to strings
     es_data = filled_params.transform_values do |v|
       v.is_a?(Cassandra::Uuid) ? v.to_s : v
     end
-  
-    # Index document in Elasticsearch
+
+    Rails.logger.debug("Creating Elasticsearch document with ID: #{book_id.to_s}")
+    Rails.logger.debug("Elasticsearch document data: #{es_data.inspect}")
+    
     begin
       ElasticsearchClient.index_document(INDEX_NAME, es_data['id'], es_data)
     rescue => e

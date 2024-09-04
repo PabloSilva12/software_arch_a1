@@ -10,6 +10,14 @@ module ElasticsearchClient
     def self.create_index(index_name, settings = {})
       client.indices.create(index: index_name, body: settings) unless index_exists?(index_name)
     end
+
+    def self.update_document(index_name, id, body)
+      @client.update(
+        index: index_name,
+        id: id,
+        body: { doc: body }
+      )
+    end
   
     def self.index_document(index_name, id, body)
       client.index(index: index_name, id: id, body: body)
