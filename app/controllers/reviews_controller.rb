@@ -6,7 +6,28 @@ class ReviewsController < ApplicationController
   before_action :session_connection
 
   def index
-    @results = run_selecting_query(TABLE_NAME)
+    cache_key = "reviews_index"
+    cached_result = Rails.cache.read(cache_key)
+    
+    if cached_result.present?
+      # Si hay datos en la caché, parsearlos
+      @results = cached_result
+    else
+      # Si no hay caché, ejecutar la consulta
+      query_result = run_selecting_query(TABLE_NAME)
+      # Convertir el resultado en un array de hashes, que es serializable
+      serializable_result = query_result.map(&:to_h)
+      # Guardar el resultado serializable en la caché si no está vacío
+      if serializable_result.present?
+        Rails.cache.write(cache_key, serializable_result, expires_in: 12.hours)
+      end
+      
+      # Asignar los resultados a @results
+      @results = serializable_result
+    end
+    
+    # En caso de que no haya datos, asegurar que @results no sea nil
+    @results ||= []
   end
 
   def show
@@ -19,9 +40,9 @@ class ReviewsController < ApplicationController
   
 
   def edit
+
     @id = params[:review_id]  # Ensure @id is set from the URL parameters
     @review = run_selecting_query(TABLE_NAME, "id = #{Cassandra::Uuid.new(@id)}").first
-  
     # Handle case when the review is not found
     if @review.nil?
       redirect_to reviews_path, alert: 'Review not found.'
@@ -31,6 +52,7 @@ class ReviewsController < ApplicationController
   
 
   def update
+
     review_id = Cassandra::Uuid.new(params[:id]) # Ensure review_id is a valid UUID
   
     # Prepare the data for Cassandra
@@ -58,6 +80,7 @@ class ReviewsController < ApplicationController
       Rails.logger.error("Failed to update Elasticsearch document: #{e.message}")
     end
   
+    update_cache
     redirect_to review_path(review_id), notice: 'Review was successfully updated.'
   end
   
@@ -67,6 +90,7 @@ class ReviewsController < ApplicationController
   end
 
   def create
+
     review_id = Cassandra::Uuid.new(params[:id]) # Generate review UUID
     book_id = Cassandra::Uuid.new(params[:book_id])
 
@@ -78,6 +102,7 @@ class ReviewsController < ApplicationController
       'number_of_up_votes' => params[:number_of_up_votes].to_i,
       'book_id' => book_id
     }
+
 
     # Insert into Cassandra
     run_inserting_query(TABLE_NAME, filled_params)
@@ -92,7 +117,7 @@ class ReviewsController < ApplicationController
     rescue => e
       Rails.logger.error("Failed to index Elasticsearch document: #{e.message}")
     end
-
+    update_cache
     redirect_to reviews_path, notice: 'Review was successfully created.'
   end
 
@@ -107,11 +132,15 @@ class ReviewsController < ApplicationController
     rescue => e
       Rails.logger.error("Failed to delete Elasticsearch document: #{e.message}")
     end
-
+    update_cache
     redirect_to reviews_path, notice: 'Review was successfully deleted.'
   end
 
-  private
+  def update_cache
+    Rails.cache.delete("authors_summary")
+    Rails.cache.delete("top_rated")
+    Rails.cache.delete("reviews_index")
+  end
 
   def session_connection
     @session = Cassandra.cluster(hosts: CASSANDRA_CONFIG[:hosts], port: CASSANDRA_CONFIG[:port]).connect('my_keyspace')
