@@ -4,17 +4,14 @@
   <%= text_area_tag :review, @to_edit['review'] %><br>
 
   <%= label_tag :score %>
-  <%= number_field_tag :score, @to_edit['score'] %><br>
+
+  <%= number_field_tag :score, @review['score'], min: 1, max: 5 %><br>
+
 
   <%= label_tag :number_of_up_votes %>
   <%= number_field_tag :number_of_up_votes, @to_edit['number_of_up_votes'] %><br>
 
-  <%= label_tag :book_id %>
-  <%= text_field_tag :book_id, @to_edit['book_id'] %><br>
-
-  <%= hidden_field_tag :id, @to_edit['id'] %>
-  
-  <%= submit_tag 'Update Review' %>
+  <%= submit_tag "Update Review" %>
 <% end %>
-<%= link_to 'Back', review_path(@to_edit['id']) %>
+
 

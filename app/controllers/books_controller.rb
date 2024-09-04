@@ -1,8 +1,9 @@
 class BooksController < ApplicationController
-
   TABLE_NAME = 'books'
 
   before_action :session_connection
+
+  INDEX_NAME = 'books'
 
   def top_selling
     # Query to fetch all books with their authors
@@ -18,11 +19,13 @@ class BooksController < ApplicationController
       sales_query = "SELECT book_id, year, sales FROM sales"
       sales_data = @session.execute(sales_query).to_a
 
+
       ## Agrupar las ventas por libro
       sales_by_book = sales_data.group_by { |sale| sale['book_id'] }
 
       # Calcular el total de ventas para cada libro
       total_sales_by_book = sales_by_book.transform_values { |sales| sales.sum { |sale| sale['sales'] } }
+
 
       # Calcular el total de ventas para cada autor
       total_sales_by_author = books.group_by { |book| book['author_id'] }.transform_values do |author_books|
@@ -61,10 +64,8 @@ class BooksController < ApplicationController
       # Query to fetch all books
       query = "SELECT id, name FROM books"
       books = @session.execute(query).to_a
-
       @top_books = books.map do |book|
         book_id = book['id']
-
         # Calculate average rating
         avg_score = @session.execute("SELECT AVG(score) FROM reviews WHERE book_id = ? ALLOW FILTERING", arguments: [book_id]).first['system.avg(score)']
 
@@ -85,7 +86,7 @@ class BooksController < ApplicationController
     @top_books =  @top_books.sort_by { |book| -book['avg_score'] }.first(10)
     
   end
-  
+
   def search
     cache_key = "books_index"
     # Intentar leer la caché
@@ -102,35 +103,29 @@ class BooksController < ApplicationController
       end
       all_books = serializable_result
     end
-  
     if params[:query].present?
-      # Filtrar en Ruby
       search_terms = params[:query].split(/\s+/)
       @books = all_books.select do |book|
         search_terms.any? { |term| book['summary'].downcase.include?(term.downcase) }
       end
-  
-      # Implementar paginación manual
+
       per_page = 10
       page = params[:page].to_i > 0 ? params[:page].to_i : 1
       total_books = @books.size
       @books = @books.slice((page - 1) * per_page, per_page) || []
-  
+
       @total_pages = (total_books / per_page.to_f).ceil
       @current_page = page
-  
-      # Obtener los IDs de los autores de los libros filtrados
+
       author_ids = @books.map { |book| book['author_id'] }.uniq
-  
-      # Obtener nombres de autores usando múltiples consultas
+
       authors = []
       author_ids.each do |author_id|
         author_query = "SELECT id, name FROM authors WHERE id = ?"
         author = @session.execute(author_query, arguments: [author_id]).first
         authors << author if author
       end
-  
-      # Crear un hash para mapear los IDs de los autores a sus nombres
+
       @authors_map = authors.each_with_object({}) do |author, hash|
         hash[author['id']] = author['name']
       end
@@ -138,13 +133,8 @@ class BooksController < ApplicationController
       @books = []
       @total_pages = 0
       @current_page = 0
-      @authors_map = {}
     end
   end
-  
-  
-  
-  
 
   def index
     cache_key = "books_index"
@@ -183,6 +173,11 @@ class BooksController < ApplicationController
   end
 
   def edit
+    book_id = Cassandra::Uuid.new(params[:book_id])
+    result = run_selecting_query(TABLE_NAME, "id = #{book_id}")
+    result.each do |s|
+      @to_edit = s
+
     # Convertir el author_id a UUID usando el parámetro correcto
     cache_key= "books_show/#{params[:book_id]}"
     cached_result = Rails.cache.read(cache_key)
@@ -194,14 +189,17 @@ class BooksController < ApplicationController
       # Guardar el resultado serializable en la caché si no está vacío
       Rails.cache.write(cache_key, result.to_a, expires_in: 12.hours)
       @to_edit = result.first
+
     end
     
   end
+  
 
   def update
     book_id = Cassandra::Uuid.new(params[:id])
     author_id = Cassandra::Uuid.new(params[:author_id])
   
+    # Prepare the data for Cassandra
     filled_params = {
       'name' => params[:name],
       'summary' => params[:summary],
@@ -210,13 +208,30 @@ class BooksController < ApplicationController
       'author_id' => author_id
     }
   
+    # Update Cassandra database
     filled_params.each do |key, value|
       if value.present?
         run_update_query(TABLE_NAME, book_id, key, value)
       end
     end
+    # Transform data for Elasticsearch
+    es_data = filled_params.transform_values do |v|
+      v.is_a?(Cassandra::Uuid) ? v.to_s : v
+    end
+
+    Rails.logger.debug("Updating Elasticsearch document with ID: #{book_id.to_s}")
+    Rails.logger.debug("Elasticsearch document data: #{es_data.inspect}")
+
+    # Update Elasticsearch document
+    begin
+      ElasticsearchClient.update_document(INDEX_NAME, book_id.to_s, es_data)
+    rescue => e
+      Rails.logger.error("Failed to update Elasticsearch document: #{e.message}")
+    end
+ 
     update_cache
-    redirect_to book_path(book_id)
+    redirect_to book_path(book_id), notice: 'Book was successfully updated.'
+
   end
   
 
@@ -225,12 +240,11 @@ class BooksController < ApplicationController
     @authors = run_selecting_query("authors")
     
   end
-  
-  
-  
+
   def create
     author_id = Cassandra::Uuid.new(params[:author_id])
-    # Obteniendo los parámetros directamente
+    book_id = Cassandra::Uuid.new(params[:id])
+   
     filled_params = {
       'id' => params[:id],
       'name' => params[:name],
@@ -240,16 +254,40 @@ class BooksController < ApplicationController
       'author_id' => author_id
     }
   
-    # Insertando en la base de datos
+    
     run_inserting_query(TABLE_NAME, filled_params)
+
+  
+    es_data = filled_params.transform_values do |v|
+      v.is_a?(Cassandra::Uuid) ? v.to_s : v
+    end
+
+    Rails.logger.debug("Creating Elasticsearch document with ID: #{book_id.to_s}")
+    Rails.logger.debug("Elasticsearch document data: #{es_data.inspect}")
+    
+    begin
+      ElasticsearchClient.index_document(INDEX_NAME, es_data['id'], es_data)
+    rescue => e
+      Rails.logger.error("Failed to index Elasticsearch document: #{e.message}")
+    end
+ 
     update_cache
     # Redireccionar al índice de libros después de crear
     redirect_to books_path, notice: 'Book was successfully created.'
   end
   
 
+
   def destroy
     run_delete_query_by_id(TABLE_NAME, params[:id])
+
+
+    # Delete document from Elasticsearch
+    begin
+      ElasticsearchClient.delete_document(INDEX_NAME, params[:id])
+    rescue => e
+      Rails.logger.error("Failed to delete Elasticsearch document: #{e.message}")
+    end
     update_cache
     redirect_to books_path, notice: 'Book was successfully deleted.'
   end
