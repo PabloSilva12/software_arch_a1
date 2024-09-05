@@ -173,13 +173,7 @@ class BooksController < ApplicationController
   end
 
   def edit
-    book_id = Cassandra::Uuid.new(params[:book_id])
-    result = run_selecting_query(TABLE_NAME, "id = #{book_id}")
-    result.each do |s|
-      @to_edit = s
-
-    # Convertir el author_id a UUID usando el parámetro correcto
-    cache_key= "books_show/#{params[:book_id]}"
+    cache_key = "books_show/#{params[:book_id]}"
     cached_result = Rails.cache.read(cache_key)
     if cached_result.present?
       @to_edit = cached_result.first
@@ -189,9 +183,7 @@ class BooksController < ApplicationController
       # Guardar el resultado serializable en la caché si no está vacío
       Rails.cache.write(cache_key, result.to_a, expires_in: 12.hours)
       @to_edit = result.first
-
     end
-    
   end
   
 
@@ -253,11 +245,9 @@ class BooksController < ApplicationController
       'number_of_sales' => 0,
       'author_id' => author_id
     }
-  
     
     run_inserting_query(TABLE_NAME, filled_params)
 
-  
     es_data = filled_params.transform_values do |v|
       v.is_a?(Cassandra::Uuid) ? v.to_s : v
     end
@@ -298,8 +288,6 @@ class BooksController < ApplicationController
     Rails.cache.delete("top_rated")
     Rails.cache.delete("top_selling")
   end
-
-  private
 
   def session_connection
     @session = Cassandra.cluster(hosts: CASSANDRA_CONFIG[:hosts], port: CASSANDRA_CONFIG[:port]).connect('my_keyspace')
