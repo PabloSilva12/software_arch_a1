@@ -1,7 +1,7 @@
 <h1>Edit Review</h1>
-<%= form_with url: review_path(@to_edit['id']), method: :patch, local: true do %>
+<%= form_with url: review_path(@review['id']), method: :patch, local: true do %>
   <%= label_tag :review %>
-  <%= text_area_tag :review, @to_edit['review'] %><br>
+  <%= text_area_tag :review, @review['review'] %><br>
 
   <%= label_tag :score %>
 
@@ -9,7 +9,7 @@
 
 
   <%= label_tag :number_of_up_votes %>
-  <%= number_field_tag :number_of_up_votes, @to_edit['number_of_up_votes'] %><br>
+  <%= number_field_tag :number_of_up_votes, @review['number_of_up_votes'] %><br>
 
   <%= submit_tag "Update Review" %>
 <% end %>
