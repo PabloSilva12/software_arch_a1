@@ -15,6 +15,7 @@ Rails.application.routes.draw do
 
   resources :reviews do
     get "edit"
+    get "search", on: :collection
   end
 
   resources :books do

@@ -1,32 +1,46 @@
 class AuthorsController < ApplicationController
 
   TABLE_NAME = 'authors'
+  INDEX_NAME = "author_summary"
 
   before_action :session_connection
 
   def author_summary
     cache_key = "authors_summary"
+  
+    if ElasticsearchService.connected?
+      unless ElasticsearchService.index_exists?(ElasticsearchService::INDEXES[:author_summary])
+        ElasticsearchService.create_index(ElasticsearchService::INDEXES[:author_summary], ElasticsearchService.author_summary_mapping)
+      end
+      elastic = ElasticsearchService.fetch_all_documents(ElasticsearchService::INDEXES[:author_summary])
+      if elastic && !elastic.empty?
+        @results = elastic
+        puts "elastico"
+      end
+    end
+    puts "no elastico"
     @results = Rails.cache.fetch(cache_key, expires_in: 12.hours) do
+
       query = "SELECT id, name FROM authors"
       authors = @session.execute(query).to_a
-    
+
       authors.map do |author|
         author_id = author['id']
-    
+
         # Fetch books for the author
         books = @session.execute(
           "SELECT id FROM books WHERE author_id = ? ALLOW FILTERING", arguments: [author_id]
         ).to_a
-    
+
         # Initialize counters
         books_count = books.size
         total_sales = 0
         total_score = 0
         total_reviews = 0
-    
+
         books.each do |book|
           book_id = book['id']
-    
+
           # Calculate average score
           review_query = "SELECT score FROM reviews WHERE book_id = ? ALLOW FILTERING"
           reviews = @session.execute(review_query, arguments: [book_id]).to_a
@@ -34,7 +48,7 @@ class AuthorsController < ApplicationController
           reviews.each do |review|
             total_score += review['score']
           end
-    
+
           # Calculate total sales
           sales_query = "SELECT sales FROM sales WHERE book_id = ? ALLOW FILTERING"
           sales = @session.execute(sales_query, arguments: [book_id]).to_a
@@ -42,13 +56,24 @@ class AuthorsController < ApplicationController
             total_sales += sale['sales']
           end
         end
-    
+
         # Compute average score
         average_score = total_reviews > 0 ? total_score.to_f / total_reviews : 0
         # Merge results
-        author.merge('books_count' => books_count, 'average_score' => average_score, 'total_sales' => total_sales)
+        author_data = author.merge('books_count' => books_count, 'average_score' => average_score, 'total_sales' => total_sales)
+        # Index the document in Elasticsearch
+        author_data["id"] = author_id.to_s
+        if ElasticsearchService.connected?
+          ElasticsearchService.index_document(
+            ElasticsearchService::INDEXES[:author_summary],
+            author_id.to_s,
+            author_data
+          )
+        end
+        author_data
       end
     end
+        
     # Handle sorting
     if params[:sort_by]
       sort_order = params[:sort_order] == 'desc' ? 'desc' : 'asc'
@@ -58,9 +83,25 @@ class AuthorsController < ApplicationController
   
     # Apply filtering
     if params[:filter_by] && params[:filter_value]
-      @results.select! { |author| author[params[:filter_by]].to_s.include?(params[:filter_value]) }
+      search_terms = params[:filter_value]
+      if ElasticsearchService.connected?
+        elasticsearch_query = ElasticsearchService.query(params[:filter_by], search_terms)
+        elastic_results = ElasticsearchService.search(ElasticsearchService::INDEXES[:author_summary], elasticsearch_query)
+        if elastic_results['hits']['hits'].any?
+          @results = elastic_results['hits']['hits'].map { |hit| hit['_source'] }
+        else
+          @results = @results.select do |author_s|
+            author_s[params[:filter_by]].downcase.include?(search_terms.downcase)
+          end
+        end
+      else
+        @results = @results.select do |author_s|
+          author_s[params[:filter_by]].downcase.include?(search_terms.downcase)
+        end
+      end
     end
   end
+  
 
   def index
     cache_key = "authors_index"
@@ -149,8 +190,18 @@ class AuthorsController < ApplicationController
         run_update_query(TABLE_NAME, author_id, key, value)
       end
     end
-    update_cache
     
+    es_data = filled_params.transform_values do |v|
+      v.is_a?(Cassandra::Uuid) ? v.to_s : v
+    end
+    Rails.logger.debug("Updating Elasticsearch document with ID: #{author_id.to_s}")
+    Rails.logger.debug("Elasticsearch document data: #{es_data.inspect}")
+    update_cache
+    begin
+      ElasticsearchClient.update_document(INDEX_NAME, author_id.to_s, es_data)
+    rescue => e
+      Rails.logger.error("Failed to update Elasticsearch document: #{e.message}")
+    end
     redirect_to author_path(author_id)
   end
   

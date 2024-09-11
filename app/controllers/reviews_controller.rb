@@ -1,7 +1,6 @@
 class ReviewsController < ApplicationController
 
   TABLE_NAME = 'reviews'
-  INDEX_NAME = 'reviews'
 
   before_action :session_connection
 
@@ -69,13 +68,10 @@ class ReviewsController < ApplicationController
   
     # Transform data for Elasticsearch
     es_data = filled_params.transform_values(&:to_s)
-  
-    Rails.logger.debug("Updating Elasticsearch document with ID: #{review_id}")
-    Rails.logger.debug("Elasticsearch document data: #{es_data.inspect}")
-  
+
     # Update Elasticsearch document
     begin
-      ElasticsearchClient.update_document(INDEX_NAME, review_id.to_s, es_data)
+      ElasticsearchService.update_document(TABLE_NAME, review_id.to_s, es_data)
     rescue => e
       Rails.logger.error("Failed to update Elasticsearch document: #{e.message}")
     end
@@ -113,14 +109,38 @@ class ReviewsController < ApplicationController
     Rails.logger.debug("Elasticsearch document data: #{es_data.inspect}")
 
     begin
-      ElasticsearchClient.index_document(INDEX_NAME, review_id.to_s, es_data)
+      ElasticsearchClient.index_document(TABLE_NAME, review_id.to_s, es_data)
     rescue => e
       Rails.logger.error("Failed to index Elasticsearch document: #{e.message}")
     end
     update_cache
     redirect_to reviews_path, notice: 'Review was successfully created.'
   end
+  
+  def search
+    if params[:query].present?
+      search_terms = params[:query]
+      # Create an Elasticsearch query
+      if ElasticsearchService.connected?
+        elasticsearch_query = ElasticsearchService.query( 'review', search_terms)
+        elasticsearch_results = ElasticsearchService.search('reviews', elasticsearch_query)
+        @reviews = elasticsearch_results['hits']['hits'].any? ? elasticsearch_results['hits']['hits'].map { |hit| hit['_source'] } : []
+      else
+        cache_key = "reviews_index"
+        cached_result = Rails.cache.read(cache_key)
+        all_reviews = cached_result.present? ? cached_result : run_selecting_query(TABLE_NAME).map(&:to_h)
+        puts "No results from Elasticsearch. Falling back to cached results."
+        @reviews = all_reviews.select do |review|
+          review['review'].downcase.include?(search_terms.downcase)
+        end 
+      end
+    else
+      @reviews = []
+    end
+  
+  end
 
+  
   def destroy
     review_id = params[:id]
 
@@ -128,7 +148,7 @@ class ReviewsController < ApplicationController
 
     # Delete document from Elasticsearch
     begin
-      ElasticsearchClient.delete_document(INDEX_NAME, review_id)
+      ElasticsearchClient.delete_document(TABLE_NAME, review_id)
     rescue => e
       Rails.logger.error("Failed to delete Elasticsearch document: #{e.message}")
     end

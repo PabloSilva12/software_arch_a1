@@ -1,0 +1,42 @@
+<h1>Search for Reviews</h1>
+
+<%= form_with url: search_reviews_path, method: :get, local: true do %>
+  <div>
+    <%= label_tag :query, "Search by Content" %>
+    <%= text_field_tag :query, params[:query] %>
+  </div>
+
+  <div>
+    <%= submit_tag "Search" %>
+  </div>
+<% end %>
+
+<h1>Search Results</h1>
+
+<% if @reviews.empty? %>
+  <p>No reviews found matching your query.</p>
+<% else %>
+    <table>
+        <thead>
+            <tr>
+            <th>Review</th>
+            <th>Score</th>
+            <th>Number of Up Votes</th>
+            <th>Book ID</th>
+            <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% @reviews.each do |review| %>
+            <tr>
+                <td><%= review['review'] %></td>
+                <td><%= review['score'] %></td>
+                <td><%= review['number_of_up_votes'] %></td>
+                <td><%= review['book_id'] %></td>
+                <td><%= link_to 'Show', review_path(review['id']) %></td>
+            </tr>
+            <% end %>
+        </tbody>
+    </table>
+
+<% end %>

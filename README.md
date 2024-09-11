@@ -28,7 +28,10 @@ Start + redis run:
 ```
  docker-compose -f docker-compose-redis.yml up --build
 ```
-
+para sacar metricas
+```
+docker stats --no-stream > metrics.txt
+```
 This command will:
 
 - Build the Docker image for the Rails app.
@@ -48,6 +51,8 @@ http://localhost:3000
 
 ```
  rails db:seed
+ rails elastic:seed
+
 ```
 
 ### Stopping the Containers

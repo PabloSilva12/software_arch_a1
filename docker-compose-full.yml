@@ -1,10 +1,25 @@
-version: '3.8'
-
 networks:
   app-network:
     driver: bridge
 
 services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.9.0
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+    ports:
+      - "9200:9200"
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cat/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
   redis:
     image: redis:latest
     ports:
@@ -32,7 +47,7 @@ services:
       - -c
       - |
         /docker-entrypoint.sh cassandra -f &
-        sleep 30
+        sleep 60  # Aumenta el tiempo de espera para dar más tiempo a Cassandra
         cqlsh -e "
           CREATE KEYSPACE IF NOT EXISTS my_keyspace WITH REPLICATION = {'class': 'SimpleStrategy', 'replication_factor': 1};
           USE my_keyspace;
@@ -56,16 +71,17 @@ services:
             review TEXT,
             score INT,
             number_of_up_votes INT,
-            book_id UUID,
+            book_id UUID
           );
           CREATE TABLE my_keyspace.sales (
             id UUID PRIMARY KEY,
             book_id UUID,
             year INT,
-            sales INT,
+            sales INT
           );
         "
         wait
+
     environment:
       - CASSANDRA_CLUSTER_NAME=Test Cluster
       - CASSANDRA_DC=dc1
@@ -84,9 +100,17 @@ services:
     depends_on:
       cassandra:
         condition: service_healthy
+      redis:
+        condition: service_healthy
 
     environment:
       - RAILS_ENV=development
       - REDIS_URL=redis://software_arch_a1-redis-1:6379
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
     networks:
       - app-network
+
+  
+volumes:
+  esdata:
+    driver: local

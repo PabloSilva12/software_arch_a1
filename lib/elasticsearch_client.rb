@@ -12,12 +12,12 @@ module ElasticsearchClient
     end
 
     def self.update_document(index_name, id, body)
-      @client.update(
+      client.update(
         index: index_name,
         id: id,
         body: { doc: body }
       )
-    end
+    end    
   
     def self.index_document(index_name, id, body)
       client.index(index: index_name, id: id, body: body)

@@ -3,8 +3,6 @@ class BooksController < ApplicationController
 
   before_action :session_connection
 
-  INDEX_NAME = 'books'
-
   def top_selling
     # Query to fetch all books with their authors
     cache_key = "top_selling"
@@ -88,25 +86,29 @@ class BooksController < ApplicationController
   end
 
   def search
-    cache_key = "books_index"
-    # Intentar leer la caché
-    cached_result = Rails.cache.read(cache_key)
-    if cached_result.present?
-      all_books = cached_result
-    else
-      books_query = "SELECT * FROM books"
-      all_books = @session.execute(books_query).to_a
-      serializable_result = all_books.map(&:to_h)
-      # Guardar el resultado serializable en la caché si no está vacío
-      if serializable_result.present?
-        Rails.cache.write(cache_key, serializable_result, expires_in: 12.hours)
-      end
-      all_books = serializable_result
-    end
+    
     if params[:query].present?
-      search_terms = params[:query].split(/\s+/)
-      @books = all_books.select do |book|
-        search_terms.any? { |term| book['summary'].downcase.include?(term.downcase) }
+      search_terms = params[:query]
+      if ElasticsearchService.connected?
+        elasticsearch_query = ElasticsearchService.query( 'summary', search_terms)
+        elasticsearch_results = ElasticsearchService.search('books', elasticsearch_query)
+        @books = elasticsearch_results['hits']['hits'].any? ? elasticsearch_results['hits']['hits'].map { |hit| hit['_source'] } : []
+      else
+        @books = []
+      end
+      if @books.empty?
+        cache_key = "books_index"
+        # Intentar leer la caché
+        cached_result = Rails.cache.read(cache_key)
+        all_books = cached_result.present? ? cached_result : run_selecting_query(TABLE_NAME).map(&:to_h)
+        # Cache if the result isn't empty
+        @books = all_books.select do |book|
+          book['summary'].downcase.include?(search_terms.downcase)
+        end
+      else
+        @books.each do |book|
+          book['author_id'] = Cassandra::Uuid.new(book['author_id'])
+        end
       end
 
       per_page = 10
@@ -122,9 +124,18 @@ class BooksController < ApplicationController
       authors = []
       author_ids.each do |author_id|
         author_query = "SELECT id, name FROM authors WHERE id = ?"
-        author = @session.execute(author_query, arguments: [author_id]).first
+        
+        # Ensure author_id is a UUID object, whether it's a string or already a UUID
+        uuid_author_id = author_id.is_a?(Cassandra::Uuid) ? author_id : Cassandra::Uuid.new(author_id)
+        
+        begin
+          author = @session.execute(author_query, arguments: [uuid_author_id]).first
+        rescue => e
+          puts "Error executing query: #{e.message}"
+        end
         authors << author if author
       end
+      
 
       @authors_map = authors.each_with_object({}) do |author, hash|
         hash[author['id']] = author['name']
@@ -216,7 +227,7 @@ class BooksController < ApplicationController
 
     # Update Elasticsearch document
     begin
-      ElasticsearchClient.update_document(INDEX_NAME, book_id.to_s, es_data)
+      ElasticsearchClient.update_document(TABLE_NAME, book_id.to_s, es_data)
     rescue => e
       Rails.logger.error("Failed to update Elasticsearch document: #{e.message}")
     end
@@ -256,7 +267,7 @@ class BooksController < ApplicationController
     Rails.logger.debug("Elasticsearch document data: #{es_data.inspect}")
     
     begin
-      ElasticsearchClient.index_document(INDEX_NAME, es_data['id'], es_data)
+      ElasticsearchClient.index_document(TABLE_NAME, es_data['id'], es_data)
     rescue => e
       Rails.logger.error("Failed to index Elasticsearch document: #{e.message}")
     end
@@ -274,7 +285,7 @@ class BooksController < ApplicationController
 
     # Delete document from Elasticsearch
     begin
-      ElasticsearchClient.delete_document(INDEX_NAME, params[:id])
+      ElasticsearchClient.delete_document(TABLE_NAME, params[:id])
     rescue => e
       Rails.logger.error("Failed to delete Elasticsearch document: #{e.message}")
     end

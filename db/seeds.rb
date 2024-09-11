@@ -1,6 +1,7 @@
 require 'faker'
 require "#{Rails.root}/app/controllers/concerns/database_interactions.rb"
 
+
 include DatabaseInteractions
 
 # Helper methods to generate data
@@ -26,28 +27,31 @@ def create_books(author_ids)
   book_ids = []
   300.times do
     id= Cassandra::Uuid::Generator.new.now
-    run_inserting_query('books', {
+    book_ids << id
+    book_data = {
       'id' => id,
       'name' => Faker::Book.title,
       'summary' => Faker::Lorem.paragraph(sentence_count: 3),
       'date_of_publication' => Faker::Date.between(from: '1900-01-01', to: Date.today).to_s,
       'number_of_sales' => 0,
-      'author_id' => Cassandra::Uuid.new(author_ids.sample.to_s)  # Ensure the correct handling of UUID
-    })
+      'author_id' => Cassandra::Uuid.new(author_ids.sample.to_s)
+    }
+    run_inserting_query('books', book_data)
   end
   return book_ids
 end
 
 def create_reviews(book_ids)
   book_ids.each do |book_id|
-    rand(1..10).times do
-      run_inserting_query('reviews', {
+    rand(1..5).times do
+      review_data = {
         'id' => Cassandra::Uuid::Generator.new.now,
         'review' => Faker::Lorem.sentence(word_count: 20),
         'score' => rand(1..5),
         'number_of_up_votes' => rand(0..500),
         'book_id' => Cassandra::Uuid.new(book_id.to_s)
-      })
+      }
+      run_inserting_query('reviews', review_data)
     end
   end
 end
@@ -55,7 +59,7 @@ end
 def create_sales(book_ids)
   @session = Cassandra.cluster(hosts: CASSANDRA_CONFIG[:hosts], port: CASSANDRA_CONFIG[:port]).connect('my_keyspace')
   book_ids.each do |book_id|
-    (Date.today.year - 5..Date.today.year).each do |year|
+    (Date.today.year - 2..Date.today.year).each do |year|
       run_inserting_query('sales', {
         'id' => Cassandra::Uuid::Generator.new.now,
         'book_id' => book_id,
