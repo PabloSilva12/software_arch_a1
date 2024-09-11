@@ -93,7 +93,7 @@ services:
     environment:
       - RAILS_ENV=development
       - IMAGE_STORAGE_PATH=/var/www/my_app/public/uploads # Environment variable for image storage path
-      - USE_TRAEFIK_ASSETS=${USE_TRAEFIK_ASSETS:-false} # Flag to determine if Traefik serves static assets
+      - USE_TRAEFIK_ASSETS=${USE_TRAEFIK_ASSETS:-true} # Flag to determine if Traefik serves static assets
     networks:
       - app-network
 

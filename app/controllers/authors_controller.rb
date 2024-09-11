@@ -217,10 +217,11 @@ class AuthorsController < ApplicationController
   def create
     author_id = Cassandra::Uuid.new(params[:id])
     image_path = if params[:image_path].present?
-      save_image(params[:image_path], author_id)
+      save_image(params[:image_path], author_id, 'authors')
     else
       nil
     end
+    
     filled_params = {
       'id' => params[:id],
       'name' => params[:name],
