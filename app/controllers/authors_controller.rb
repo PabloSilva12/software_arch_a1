@@ -215,18 +215,22 @@ class AuthorsController < ApplicationController
   end
 
   def create
+    author_id = Cassandra::Uuid.new(params[:id])
+    image_path = if params[:image_path].present?
+      save_image(params[:image_path], author_id)
+    else
+      nil
+    end
     filled_params = {
       'id' => params[:id],
       'name' => params[:name],
       'date_of_birth' => params[:date_of_birth],
       'country_of_origin' => params[:country_of_origin],
       'short_description' => params[:short_description],
-      'image_url' => params[:image_path]
+      'image_url' => image_path
     }
   
-    if params[:image].present?
-      filled_params['image_path'] = save_image(params[:image], params[:id], 'authors')
-    end
+  
   
     run_inserting_query('authors', filled_params)
     update_cache
