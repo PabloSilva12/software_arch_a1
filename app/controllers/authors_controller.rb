@@ -215,22 +215,43 @@ class AuthorsController < ApplicationController
   end
 
   def create
-    # Obteniendo los parámetros directamente
     filled_params = {
       'id' => params[:id],
       'name' => params[:name],
       'date_of_birth' => params[:date_of_birth],
       'country_of_origin' => params[:country_of_origin],
-      'short_description' => params[:short_description]
+      'short_description' => params[:short_description],
+      'image_url' => params[:image_path]
     }
   
-    # Insertando en la base de datos
-    run_inserting_query(TABLE_NAME, filled_params)
+    if params[:image].present?
+      filled_params['image_path'] = save_image(params[:image], params[:id], 'authors')
+    end
+  
+    run_inserting_query('authors', filled_params)
     update_cache
-
-    # Redireccionar al índice de autores después de crear
+  
     redirect_to authors_path, notice: 'Author was successfully created.'
   end
+  
+  
+  
+
+  def save_image(image_param, entity_id, folder)
+    upload_dir = Rails.root.join('public', 'uploads', folder)
+    FileUtils.mkdir_p(upload_dir) unless Dir.exist?(upload_dir)  # Use `Dir.exist?` instead of `Dir.exists?`
+  
+    file_name = "#{entity_id}.#{image_param.original_filename.split('.').last}"
+    file_path = upload_dir.join(file_name)
+  
+    File.open(file_path, 'wb') do |file|
+      file.write(image_param.read)
+    end
+  
+    "/uploads/#{folder}/#{file_name}"
+  end
+  
+  
 
   def destroy
     run_delete_query_by_id(TABLE_NAME, params[:id])

@@ -17,7 +17,8 @@ namespace :elasticsearch do
             summary: { type: 'text' },
             date_of_publication: { type: 'date' },
             number_of_sales: { type: 'integer' },
-            author_id: { type: 'keyword' }
+            author_id: { type: 'keyword' },
+            cover_image_url: { type: 'text'}
           }
         }
       },

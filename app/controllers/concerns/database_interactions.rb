@@ -5,11 +5,12 @@ module DatabaseInteractions
 
   KEYSPACE = 'my_keyspace'
   COLUMNS_BY_TABLE = {
-    'authors' => ['id', 'name', 'date_of_birth', 'country_of_origin', 'short_description'],
-    'books' => ['id', 'name', 'summary', 'date_of_publication', 'number_of_sales', 'author_id'],
+    'authors' => ['id', 'name', 'date_of_birth', 'country_of_origin', 'short_description', 'image_url'],
+    'books' => ['id', 'name', 'summary', 'date_of_publication', 'number_of_sales', 'author_id', 'cover_image_url'],
     'reviews' => ['id', 'review', 'score', 'number_of_up_votes', 'book_id' ],
     'sales' => ['id', 'book_id', 'year', 'sales']
   }
+  
 
   def run_inserting_query(table_name, parameters)
     cluster = Cassandra.cluster(
@@ -20,10 +21,10 @@ module DatabaseInteractions
     base_parameters = COLUMNS_BY_TABLE[table_name]
     columns = ['id']
     values = [parameters['id']]
-  
+    
     base_parameters.each_with_index do |column, index|
       next if column == 'id'  # Skip 'id' column in the loop, it's already added
-  
+    
       value = parameters[column]
       columns << column
       # Handle UUIDs properly
@@ -32,7 +33,9 @@ module DatabaseInteractions
       elsif value.is_a?(Integer) || value.is_a?(Float)
         values << value.to_s  # Convert numbers to strings
       else
-        values << "'#{value.gsub("'", "''")}'"  # Handle strings, escaping single quotes
+        # Handle strings, escaping single quotes
+        value = value.nil? ? '' : value
+        values << "'#{value.gsub("'", "''")}'"
       end
     end
     columns_string = columns.join(', ')
@@ -40,6 +43,7 @@ module DatabaseInteractions
     query = "INSERT INTO #{KEYSPACE}.#{table_name} (#{columns_string}) VALUES (#{values_string});"
     session.execute(query)
   end
+  
   
 
   def run_selecting_query(table_name, filter = 'FALSE')

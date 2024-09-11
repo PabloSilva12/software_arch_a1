@@ -3,8 +3,11 @@
 <p>Country of Origin: <%= @author['country_of_origin'] %></p>
 <p>Short Description: <%= @author['short_description'] %></p>
 
-
+<% if @author['image_url'].present? %>
+  <%= image_tag @author['image_url'], alt: 'Author Image' %>
+<% end %>
 
 <%= link_to 'Edit', edit_author_path(@author['id']) %> |
-<%=link_to 'Delete',author_path(@author['id']) , data: { turbo_method: "delete" }%>|
+<%= link_to 'Delete', author_path(@author['id']), data: { turbo_method: "delete" } %> |
 <%= link_to 'Back to Authors', authors_path %>
+
