@@ -41,7 +41,8 @@ services:
             name TEXT,
             date_of_birth DATE,
             country_of_origin TEXT,
-            short_description TEXT
+            short_description TEXT,
+            image_url TEXT
           );
           CREATE TABLE my_keyspace.books (
             id UUID PRIMARY KEY,
@@ -49,7 +50,8 @@ services:
             summary TEXT,
             date_of_publication DATE,
             number_of_sales INT,
-            author_id UUID
+            author_id UUID,
+            cover_image_url TEXT
           );
           CREATE TABLE my_keyspace.reviews (
             id UUID PRIMARY KEY,
