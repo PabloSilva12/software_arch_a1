@@ -1,10 +1,10 @@
-# Assignement 1
+# Assignment 3
 
-This is the code for the assignment 1 of the course software architecture. The application is containerized using Docker and Docker Compose.
+This is the code for the assignment 3 of the course software architecture. The application is containerized using Docker and Docker Compose.
 
 ## Report
 
-Link to google drive: [Report]https://docs.google.com/document/d/1xbG_9fGG-n2w6ibhZuWz8iuyWyR-8N3GVGZpllFud8Y/edit?usp=sharing
+Link to google drive: [Report] https://docs.google.com/document/d/1-YAgeN7pZHTizsOCwmjUrvDcMj4giBkZ9AYvvMNJYtg/edit?usp=sharing
 
 ## Prerequisites
 
@@ -18,12 +18,13 @@ First, clone this repository to your local machine
 
 ### Build and Start the Containers
 
-To build and start the application and Cassandra containers, run:
+To build and start the application and Cassandra containers, run (changing the docker compose according to wich services do you want vanilla docker-compose is web+cassandra docker-compose-full encases all services and then we have 3 separate docker composes for each serice independently togethetr with web and cassandra):
 
 ```
  docker-compose up --build
 ```
 
+EXAMPLE REDIS 
 Start + redis run:
 ```
  docker-compose -f docker-compose-redis.yml up --build
