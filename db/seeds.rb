@@ -58,7 +58,7 @@ end
 
 def create_sales(book_ids)
   @session = Cassandra.cluster(hosts: CASSANDRA_CONFIG[:hosts], port: CASSANDRA_CONFIG[:port]).connect('my_keyspace')
-  book_ids.each do |book_id|
+  book_ids.each_with_index do |book_id, index|
     (Date.today.year - 2..Date.today.year).each do |year|
       run_inserting_query('sales', {
         'id' => Cassandra::Uuid::Generator.new.now,
@@ -66,16 +66,19 @@ def create_sales(book_ids)
         'year' => year,
         'sales' => rand(1000..20_000)
       })
+      puts " upating sales from"
+      puts "book_id: #{book_id}"
       update_number_of_sales(book_id)
+      sleep(0.5) if index % 100 == 0
     end
   end
 end
 def update_number_of_sales(book_id)
-  # Contar el número total de ventas para el libro dado
-  sales_count_query = "SELECT COUNT(*) FROM my_keyspace.sales WHERE book_id = ? ALLOW FILTERING"
-  total_sales = @session.execute(sales_count_query, arguments: [book_id]).first['count']
-  # Actualizar el campo number_of_sales en la tabla books usando run_update_query
-  run_update_query('books', book_id, 'number_of_sales', total_sales)
+    # Contar el número total de ventas para el libro dado
+    sales_count_query = "SELECT COUNT(*) FROM my_keyspace.sales WHERE book_id = ? ALLOW FILTERING"
+    total_sales = @session.execute(sales_count_query, arguments: [book_id]).first['count']
+    # Actualizar el campo number_of_sales en la tabla books usando run_update_query
+    run_update_query('books', book_id, 'number_of_sales', total_sales)
 end
 # Execution
 
@@ -87,11 +90,22 @@ author_ids = create_authors
 puts "Seeding books..."
 book_ids = create_books(author_ids)
 
-# Create reviews
+# # Create reviews
 puts "Seeding reviews..."
 create_reviews(book_ids)
 
 # Create sales
+
+# def get_all_book_ids
+#   # Usar run_selecting_query para seleccionar solo los IDs
+#   result_set = run_selecting_query('books')
+
+#   # Filtrar solo los IDs de los resultados
+#   book_ids = result_set.map { |row| row['id'] }
+
+#   # Retornar el arreglo de IDs
+#   book_ids
+# end
 puts "Seeding sales..."
 create_sales(book_ids)
 

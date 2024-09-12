@@ -18,6 +18,9 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - app-network
+    depends_on:
+      cassandra:
+        condition: service_healthy
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.9.0
@@ -36,6 +39,9 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
+    depends_on:
+      cassandra:
+        condition: service_healthy
 
   redis:
     image: redis:latest
@@ -43,12 +49,9 @@ services:
       - "6379:6379"
     networks:
       - app-network
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 10s
+    depends_on:
+      cassandra:
+        condition: service_healthy
 
   cassandra:
     image: cassandra:3.11
@@ -58,7 +61,7 @@ services:
       test: ["CMD", "nodetool", "status"]
       interval: 30s
       retries: 5
-      timeout: 10s
+      timeout: 15s
     command: 
       - /bin/bash
       - -c
@@ -119,8 +122,6 @@ services:
     depends_on:
       cassandra:
         condition: service_healthy
-      redis:
-        condition: service_healthy
 
     environment:
       - RAILS_ENV=development
@@ -130,6 +131,8 @@ services:
       - USE_TRAEFIK_ASSETS=${USE_TRAEFIK_ASSETS:-false} 
     networks:
       - app-network
+
+
   whoami:
     image: traefik/whoami
     labels:
@@ -138,6 +141,7 @@ services:
       - "traefik.http.routers.whoami.entrypoints=web"
     networks:
       - app-network
+
 
   
 volumes:

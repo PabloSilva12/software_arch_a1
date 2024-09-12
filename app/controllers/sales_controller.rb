@@ -3,6 +3,7 @@ class SalesController < ApplicationController
   TABLE_NAME = 'sales'
 
   before_action :session_connection
+  skip_before_action :verify_authenticity_token
 
   def index
     cache_key = "sales_index"

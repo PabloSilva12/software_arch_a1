@@ -2,7 +2,7 @@ class BooksController < ApplicationController
   TABLE_NAME = 'books'
 
   before_action :session_connection
-
+  skip_before_action :verify_authenticity_token
   def top_selling
     # Query to fetch all books with their authors
     cache_key = "top_selling"

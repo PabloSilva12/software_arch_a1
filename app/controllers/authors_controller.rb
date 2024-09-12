@@ -4,6 +4,8 @@ class AuthorsController < ApplicationController
   INDEX_NAME = "author_summary"
 
   before_action :session_connection
+  skip_before_action :verify_authenticity_token
+
 
   def author_summary
     cache_key = "authors_summary"
@@ -22,7 +24,6 @@ class AuthorsController < ApplicationController
       # Si hay datos en la caché, parsearlos
       @results = cached_result
       puts"cached"
-      puts @results
     else
       query = "SELECT id, name FROM authors"
       authors = @session.execute(query).to_a
@@ -98,7 +99,7 @@ class AuthorsController < ApplicationController
           @results = elastic_results['hits']['hits'].map { |hit| hit['_source'] }
         else
           @results = @results.select do |author_s|
-            author_s[params[:filter_by]].downcase.include?(search_terms.downcase)
+            author_s[params[:filter_by]].to_s.downcase.include?(search_terms.downcase)
           end
         end
       else
@@ -231,11 +232,6 @@ class AuthorsController < ApplicationController
       'short_description' => params[:short_description],
       'image_url' => image_path
     }
-  
-
-  
-  
-    
 
     # Insertando en la base de datos
     run_inserting_query(TABLE_NAME, filled_params)
