@@ -1,5 +1,5 @@
 <h1>New Book</h1>
-<%= form_with url: books_path, local: true do %>
+<%= form_with url: books_path, local: true, multipart: true do %>
   <%= label_tag :name %>
   <%= text_field_tag :name %><br>
 
@@ -14,8 +14,12 @@
   <%= label_tag :author_id, "Select Author" %>
   <%= select_tag :author_id, options_for_select(@authors.map { |author| [author["name"], author["id"]] }) %><br>
 
+  <%= label_tag :cover_image, "Upload Cover Image" %>
+  <%= file_field_tag :cover_image %><br>
+
   <%= hidden_field_tag :id, SecureRandom.uuid %>
 
   <%= submit_tag 'Create Book' %>
 <% end %>
+
 <%= link_to 'Back', books_path %>

@@ -238,19 +238,31 @@ class BooksController < ApplicationController
   end
 
   def create
+    # Generate UUIDs
     author_id = Cassandra::Uuid.new(params[:author_id])
     book_id = Cassandra::Uuid.new(params[:id])
-   
+  
+    # Handle image upload
+    image_path = if params[:cover_image].present?
+                   save_image(params[:cover_image], book_id)
+                 else
+                   nil
+                 end
+  
+    # Prepare parameters for database insertion
     filled_params = {
       'id' => params[:id],
       'name' => params[:name],
       'summary' => params[:summary],
       'date_of_publication' => params[:date_of_publication],
       'number_of_sales' => 0,
-      'author_id' => author_id
+      'author_id' => author_id,
+      'cover_image_url' => image_path
     }
-    
+  
+    # Insert into Cassandra
     run_inserting_query(TABLE_NAME, filled_params)
+
     if ElasticsearchService.connected?
       es_data = filled_params.transform_values do |v|
         v.is_a?(Cassandra::Uuid) ? v.to_s : v
@@ -271,8 +283,24 @@ class BooksController < ApplicationController
       )
     end
     update_cache
-    # Redireccionar al índice de libros después de crear
+  
+    # Redirect to books path
     redirect_to books_path, notice: 'Book was successfully created.'
+  end
+  
+  def save_image(image_param, entity_id)
+    folder = 'books'
+    upload_dir = Rails.root.join('public', 'uploads', folder)
+    FileUtils.mkdir_p(upload_dir) unless Dir.exist?(upload_dir)
+  
+    file_name = "#{entity_id}.#{image_param.original_filename.split('.').last}"
+    file_path = upload_dir.join(file_name)
+  
+    File.open(file_path, 'wb') do |file|
+      file.write(image_param.read)
+    end
+  
+    "/uploads/#{folder}/#{file_name}"
   end
   
 
