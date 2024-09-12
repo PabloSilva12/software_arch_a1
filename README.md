@@ -48,7 +48,7 @@ http://localhost:3000
 ### Seeding the DB
 
 -Go into the terminal of the rails container (the exec tab)
--run the following command
+-run the following command (NOTE: elastic db is only when elastic search is being used)
 
 ```
  rails db:seed
