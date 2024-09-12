@@ -217,19 +217,12 @@ class BooksController < ApplicationController
         run_update_query(TABLE_NAME, book_id, key, value)
       end
     end
+    if ElasticsearchService.connected?
     # Transform data for Elasticsearch
-    es_data = filled_params.transform_values do |v|
-      v.is_a?(Cassandra::Uuid) ? v.to_s : v
-    end
-
-    Rails.logger.debug("Updating Elasticsearch document with ID: #{book_id.to_s}")
-    Rails.logger.debug("Elasticsearch document data: #{es_data.inspect}")
-
-    # Update Elasticsearch document
-    begin
-      ElasticsearchClient.update_document(TABLE_NAME, book_id.to_s, es_data)
-    rescue => e
-      Rails.logger.error("Failed to update Elasticsearch document: #{e.message}")
+      es_data = filled_params.transform_values do |v|
+        v.is_a?(Cassandra::Uuid) ? v.to_s : v
+      end
+      ElasticsearchService.update_document(TABLE_NAME, book_id.to_s, es_data)
     end
  
     update_cache
@@ -258,20 +251,25 @@ class BooksController < ApplicationController
     }
     
     run_inserting_query(TABLE_NAME, filled_params)
-
-    es_data = filled_params.transform_values do |v|
-      v.is_a?(Cassandra::Uuid) ? v.to_s : v
+    if ElasticsearchService.connected?
+      es_data = filled_params.transform_values do |v|
+        v.is_a?(Cassandra::Uuid) ? v.to_s : v
+      end
+      ElasticsearchService.index_document(TABLE_NAME, es_data['id'], es_data)
+      elasticsearch_query = ElasticsearchService.query( 'author_id', es_data['author_id'])
+      elasticsearch_results = ElasticsearchService.search('books', elasticsearch_query)
+      # Get the total number of matching books (not just the returned ones)
+      total_books_count = elasticsearch_results['hits']['total']['value']
+      elastic_params ={
+        'id'  => es_data['author_id'],
+        'books_count' => total_books_count
+      }
+      ElasticsearchService.index_document(
+            ElasticsearchService::INDEXES[:author_summary],
+            es_data['author_id'],
+            elastic_params
+      )
     end
-
-    Rails.logger.debug("Creating Elasticsearch document with ID: #{book_id.to_s}")
-    Rails.logger.debug("Elasticsearch document data: #{es_data.inspect}")
-    
-    begin
-      ElasticsearchClient.index_document(TABLE_NAME, es_data['id'], es_data)
-    rescue => e
-      Rails.logger.error("Failed to index Elasticsearch document: #{e.message}")
-    end
- 
     update_cache
     # Redireccionar al índice de libros después de crear
     redirect_to books_path, notice: 'Book was successfully created.'
@@ -280,20 +278,53 @@ class BooksController < ApplicationController
 
 
   def destroy
+    puts params
+    
+    # Step 1: Delete the book from Cassandra
     run_delete_query_by_id(TABLE_NAME, params[:id])
-
-
-    # Delete document from Elasticsearch
-    begin
-      ElasticsearchClient.delete_document(TABLE_NAME, params[:id])
-    rescue => e
-      Rails.logger.error("Failed to delete Elasticsearch document: #{e.message}")
+  
+    if ElasticsearchService.connected?
+      
+      # Step 2: Query Elasticsearch to find the `author_id` of the book being deleted
+      elasticsearch_query = ElasticsearchService.query('id', params[:id].to_s)
+      elasticsearch_results = ElasticsearchService.search('books', elasticsearch_query)
+      
+      if elasticsearch_results['hits']['hits'].any?
+        # Extract the `author_id` from the book document
+        author_id = elasticsearch_results['hits']['hits'].first['_source']['author_id']
+        
+        # Step 3: Query Elasticsearch to get the total number of books for this `author_id`
+        elasticsearch_query_for_author_books = ElasticsearchService.query('author_id', author_id)
+        elasticsearch_results_for_author_books = ElasticsearchService.search('books', elasticsearch_query_for_author_books)
+        
+        # Get the total number of books for the author
+        total_books_count = elasticsearch_results_for_author_books['hits']['total']['value']
+        
+        # Step 4: Update the `author_summary` index with the new books count
+        elastic_params = {
+          'id' => author_id.to_s,
+          'books_count' => total_books_count
+        }
+        ElasticsearchService.index_document(
+          ElasticsearchService::INDEXES[:author_summary],
+          author_id.to_s,
+          elastic_params
+        )
+        
+        # Step 5: Delete the book document from Elasticsearch
+        ElasticsearchClient.delete_document(TABLE_NAME, params[:id])
+      else
+        Rails.logger.error("Book with ID #{params[:id]} not found in Elasticsearch.")
+      end
     end
+    
     update_cache
     redirect_to books_path, notice: 'Book was successfully deleted.'
   end
+  
 
   def update_cache
+    Rails.cache.delete("authors_summary")
     Rails.cache.delete("books_show/#{params[:id]}")
     Rails.cache.delete("books_index")
     Rails.cache.delete("top_rated")

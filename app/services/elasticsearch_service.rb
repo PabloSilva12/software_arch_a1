@@ -193,10 +193,8 @@ class ElasticsearchService
       # If the response is successful (status code 200), return true
       response['cluster_name'].present? # Checking for presence of cluster name indicates connection is successful
     rescue Faraday::ConnectionFailed => e
-      Rails.logger.error("Elasticsearch connection failed: #{e.message}")
       false
     rescue StandardError => e
-      Rails.logger.error("An error occurred while checking Elasticsearch connection: #{e.message}")
       false
     end
   end

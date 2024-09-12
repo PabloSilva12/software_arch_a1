@@ -89,11 +89,31 @@ class SalesController < ApplicationController
   end
 
   def destroy
-    run_delete_query_by_id(TABLE_NAME, params[:id])
-    update_number_of_sales(params[:id])
-    update_cache
-    redirect_to reviews_path, notice: 'Sale was successfully deleted.'
+    # Step 1: Query Cassandra to get the sale record using the sale ID
+    sale_id = params[:id].to_s
+    sale_record = run_selecting_query(TABLE_NAME, "id = #{sale_id}").first
+    
+    if sale_record.present?
+      # Step 2: Extract the book_id from the sale record
+      book_id = sale_record['book_id']
+      
+      # Step 3: Update the number of sales for the book
+      update_number_of_sales(book_id)
+      
+      # Step 4: Proceed with deleting the sale
+      run_delete_query_by_id(TABLE_NAME, sale_id)
+      
+      # Step 5: Update the cache
+      update_cache
+      
+      # Step 6: Redirect with a success message
+      redirect_to sales_path, notice: 'Sale was successfully deleted.'
+    else
+      # Handle case where sale record is not found
+      redirect_to sales_path, alert: 'Sale not found.'
+    end
   end
+  
   def update_cache
     Rails.cache.delete("authors_summary")
     Rails.cache.delete("sales_index")
