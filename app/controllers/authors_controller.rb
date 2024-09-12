@@ -7,23 +7,26 @@ class AuthorsController < ApplicationController
 
   def author_summary
     cache_key = "authors_summary"
-  
+    elastic_check = true
     if ElasticsearchService.connected?
       unless ElasticsearchService.index_exists?(ElasticsearchService::INDEXES[:author_summary])
         ElasticsearchService.create_index(ElasticsearchService::INDEXES[:author_summary], ElasticsearchService.author_summary_mapping)
       end
-      elastic = ElasticsearchService.fetch_all_documents(ElasticsearchService::INDEXES[:author_summary])
-      if elastic && !elastic.empty?
-        @results = elastic
-        puts "elastico"
-      end
+    else
+      elastic_check = false
+      puts "no elastico"
     end
-    puts "no elastico"
-    @results = Rails.cache.fetch(cache_key, expires_in: 12.hours) do
-
+    cached_result = Rails.cache.read(cache_key)
+    
+    if cached_result.present?
+      # Si hay datos en la caché, parsearlos
+      @results = cached_result
+      puts"cached"
+      puts @results
+    else
       query = "SELECT id, name FROM authors"
       authors = @session.execute(query).to_a
-
+      summaries = []
       authors.map do |author|
         author_id = author['id']
 
@@ -62,18 +65,22 @@ class AuthorsController < ApplicationController
         # Merge results
         author_data = author.merge('books_count' => books_count, 'average_score' => average_score, 'total_sales' => total_sales)
         # Index the document in Elasticsearch
-        author_data["id"] = author_id.to_s
-        if ElasticsearchService.connected?
+        author_data_elastic = author_data
+        author_data_elastic["id"] = author_id.to_s
+        if elastic_check
           ElasticsearchService.index_document(
             ElasticsearchService::INDEXES[:author_summary],
             author_id.to_s,
-            author_data
+            author_data_elastic
           )
         end
-        author_data
+        summaries << author_data
       end
+
+      @results = summaries.map(&:to_h)
+        puts"cassandra"
+        puts @results
     end
-        
     # Handle sorting
     if params[:sort_by]
       sort_order = params[:sort_order] == 'desc' ? 'desc' : 'asc'
@@ -177,31 +184,25 @@ class AuthorsController < ApplicationController
 
   def update
     author_id = Cassandra::Uuid.new(params[:id])
-  
     filled_params = {
       'name' => params[:name],
       'date_of_birth' => params[:date_of_birth],
       'country_of_origin' => params[:country_of_origin],
       'short_description' => params[:short_description]
     }
-  
     filled_params.each do |key, value|
       if value.present?
         run_update_query(TABLE_NAME, author_id, key, value)
       end
     end
-    
-    es_data = filled_params.transform_values do |v|
-      v.is_a?(Cassandra::Uuid) ? v.to_s : v
+    if ElasticsearchService.connected?
+        elastic_params ={
+          'id'  => author_id.to_s,
+          'name' => params[:name],
+        }
+        ElasticsearchClient.update_document(INDEX_NAME, author_id.to_s, elastic_params)
     end
-    Rails.logger.debug("Updating Elasticsearch document with ID: #{author_id.to_s}")
-    Rails.logger.debug("Elasticsearch document data: #{es_data.inspect}")
     update_cache
-    begin
-      ElasticsearchClient.update_document(INDEX_NAME, author_id.to_s, es_data)
-    rescue => e
-      Rails.logger.error("Failed to update Elasticsearch document: #{e.message}")
-    end
     redirect_to author_path(author_id)
   end
   
@@ -231,9 +232,27 @@ class AuthorsController < ApplicationController
       'image_url' => image_path
     }
   
+
   
   
-    run_inserting_query('authors', filled_params)
+    
+
+    # Insertando en la base de datos
+    run_inserting_query(TABLE_NAME, filled_params)
+    if ElasticsearchService.connected?
+      elastic_params ={
+          'id'  => params[:id],
+          'name' => params[:name],
+          'books_count' => 0,
+          'average_score' => 0.0,
+          'total_sales' => 0
+        }
+      ElasticsearchService.index_document(
+              ElasticsearchService::INDEXES[:author_summary],
+              params[:id],
+              elastic_params
+            )
+      end
     update_cache
   
     redirect_to authors_path, notice: 'Author was successfully created.'
@@ -260,6 +279,9 @@ class AuthorsController < ApplicationController
 
   def destroy
     run_delete_query_by_id(TABLE_NAME, params[:id])
+    if ElasticsearchService.connected?
+      ElasticsearchClient.delete_document(ElasticsearchService::INDEXES[:author_summary], params[:id])
+    end
     redirect_to authors_path, notice: "Author was deleted."
     update_cache
   end
